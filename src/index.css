@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Outfit:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+@import "tailwindcss";
+
+*{
+    font-family: "Outfit", sans-serif;
+}
+
+
+
+body {
+  background-color: #000000;
+  color: #D3D3D3;
+  font-family: 'Inter', sans-serif;
+}
+
+.fiery-gradient-text {
+  background: linear-gradient(90deg, #FF4500, #FFD700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Add this animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+

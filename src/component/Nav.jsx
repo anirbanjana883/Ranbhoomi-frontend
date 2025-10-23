@@ -29,6 +29,7 @@ const navLinks = [
 
 function Nav() {
   const { userData } = useSelector((state) => state.user);
+  console.log(userData)
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -128,7 +129,7 @@ function Nav() {
                 {userData.name.slice(0, 1).toUpperCase()}
               </div>
             ) : (
-              <IoPersonCircleSharp className="w-10 h-10 text-gray-500 transition-colors duration-300 hover:text-[#FFD700]" /> // Icon inside the glass parent
+              <IoPersonCircleSharp className="w-10 h-10 text-orange-400 transition-colors duration-300 hover:text-[#FFD700]" /> // Icon inside the glass parent
             )}
           </div>
 
@@ -151,7 +152,7 @@ function Nav() {
                 <div className="mt-2 space-y-1">
                   <button
                     onClick={() => {
-                      navigate("/profile");
+                      navigate(`/profile/${userData.username}`);
                       setShowProfileDropdown(false);
                     }}
                     className="w-full flex items-center text-left px-3 py-2 rounded-md text-sm text-[#D3D3D3] hover:bg-[#FF4500]/20 hover:text-[#FF4500] transition-colors"
@@ -218,11 +219,11 @@ function Nav() {
             src={userData.photoUrl}
             alt="profile"
             className="w-20 h-20 rounded-full object-cover border-2 border-[#FF4500]"
-            onClick={() => handleMobileNav("/profile")}
+            onClick={() => handleMobileNav(`/profile/${userData.username}`)}
           />
         ) : userData ? (
           <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold border-2 border-[#FF4500] bg-gray-900"
-               onClick={() => handleMobileNav("/profile")}>
+               onClick={() => handleMobileNav(`/profile/${userData.username}`)}>
             {userData.name.slice(0, 1).toUpperCase()}
           </div>
         ) : (
@@ -248,7 +249,7 @@ function Nav() {
         {/* Auth Links */}
         {userData ? (
           <button
-            onClick={() => handleMobileNav("/profile")}
+            onClick={() => handleMobileNav(`/profile/${userData.username}`)}
             className={mobileLinkStyles}
           >
             <FaUserCircle  size={28} />

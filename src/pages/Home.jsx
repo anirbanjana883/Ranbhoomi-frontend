@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Nav from '../component/Nav.jsx'; // Your Nav component
+import Footer from '../component/Footer.jsx';
 
 function Home() {
   const canvasRef = useRef(null);
@@ -168,14 +169,14 @@ function Home() {
             <div className="flex flex-col items-center gap-6 max-w-4xl pt-24"> {/* Added pt-24 to offset nav */}
               
               {/* Fiery Gradient Headline */}
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] via-[#FF4500] to-[#DC143C] animate-ember-flicker">
-                  Forge Your Legend
+              <h1 className="text-6xl md:text-7xl lg:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] via-[#FF4500] to-[#DC143C] animate-ember-flicker">
+                  RANBHOOMI
               </h1>
-              <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white">
-                  in the Code Arena
+              <h2 className="text-3xl md:text-6xl lg:text-7xl font-bold fiery-gradient-text">
+                  Enter the battlefield, conquer with logic
               </h2>
 
-              <p className="text-lg md:text-xl text-gray-400 max-w-2xl mt-4">
+              <p className="text-sm md:text-xl text-gray-400 max-w-2xl mt-4">
                   This isn't just practice. This is Ranbhoomi. The ultimate proving ground for competitive programmers and interview-ready engineers.
               </p>
 
@@ -187,14 +188,12 @@ function Home() {
                          hover:bg-[#E03E00] hover:shadow-[0_0_25px_rgba(255,69,0,0.8)]
                          hover:scale-105 hover:-rotate-1
                          active:scale-95 active:rotate-0">
-                  Enter the Arena
+                  Step onto the Battlefield
               </button>
             </div>
           </main>
 
-          {/* ################### */}
           {/* FEATURES SECTION   */}
-          {/* ################### */}
           <section id="features" className="py-24 px-4">
             <h2 className="text-4xl font-bold text-center mb-16 text-white">
                 Choose Your<span className="text-[#FF4500]"> Battlefield</span>
@@ -240,9 +239,7 @@ function Home() {
           </section>
 
 
-          {/* ################### */}
           {/* "DAILY GAUNTLET" SECTION */}
-          {/* ################### */}
           <section id="gauntlet" className="py-24 px-4">
               <div className="glass-card max-w-4xl mx-auto rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="text-center md:text-left">
@@ -271,14 +268,14 @@ function Home() {
               </div>
           </section>
 
-          {/* ################### */}
           {/* FOOTER       */}
-          {/* ################### */}
-          <footer className="text-center py-12 px-4 border-t border-[#FF4500]/20">
+          {/* <footer className="text-center py-12 px-4 border-t border-[#FF4500]/20">
               <p className="text-gray-500">
                   © 2025 Ranbhoomi. All rights reserved. Forged in fire.
               </p>
-          </footer>
+          </footer> */}
+
+          <Footer/>
 
         </div>
       </div>

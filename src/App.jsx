@@ -13,6 +13,8 @@ import EditProfile from './pages/EditProfile';
 import MasterRoute from './component/MasterRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import Nav from './component/Nav';
+import ProblemPage from './pages/ProblemPage';
+import ProblemListPage from './pages/ProblemListPage';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -41,6 +43,12 @@ function App() {
         <Route path='/profile/:username' element={userData ? <ProfilePage /> : <Navigate to="/login" />} />
         <Route path='/editprofile' element={userData ? <EditProfile /> : <Navigate to="/login" />} />
 
+        {/* practice problem */}
+        <Route path='/practice' element={userData ? <ProblemListPage /> : <Navigate to="/login" />} />    
+        <Route path='/problem/:slug' element={userData ? <ProblemPage /> : <Navigate to="/login" />} />
+
+
+        {/* role based suth control system */}
         <Route element={<MasterRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Route>

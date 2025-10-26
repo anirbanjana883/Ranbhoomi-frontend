@@ -11,10 +11,15 @@ import ForgetPassowrd from './pages/ForgetPassword';
 import ProfilePage from './pages/ProfilePage';
 import EditProfile from './pages/EditProfile';
 import MasterRoute from './component/MasterRoute';
+import AdminRoute from './component/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
 import Nav from './component/Nav';
 import ProblemPage from './pages/ProblemPage';
 import ProblemListPage from './pages/ProblemListPage';
+
+import CreateProblemPage from './pages/Admin/CreateProblemPage';
+import EditProblemPage from './pages/Admin/EditProblemPage';
+import ProblemManagementPage from './pages/Admin/ProblemManagementPage';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -52,6 +57,14 @@ function App() {
         <Route element={<MasterRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route path="/admin/problems" element={<ProblemManagementPage />} />
+          <Route path="/admin/problems/create" element={<CreateProblemPage />} /> 
+          <Route path="/admin/problems/edit/:slug" element={<EditProblemPage />} /> 
+        </Route>
+
+
       </Routes>
     </>
   );

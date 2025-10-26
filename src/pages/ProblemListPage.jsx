@@ -471,21 +471,28 @@ function ProblemListPage() {
                         }
                       >
                         <td className={tableCellStyle}>
-                          <Link
-                            to={`/problem/${prob.slug}`}
-                            className={titleLinkStyle}
-                          >
+                          {/* 1. Add this wrapper div with flexbox */}
+                          <div className="flex items-center gap-1.5">
                             {" "}
-                            {prob.title}{" "}
-                          </Link>
-                          {prob.isPremium && (
-                            <span
-                              title="Premium Problem"
-                              className="text-yellow-400 text-xs shrink-0 [text-shadow:0_0_8px_rgba(255,215,0,0.7)]"
+                            {/* Adjust gap-X as needed */}
+                            {prob.isPremium && (
+                              <span
+                                title="Premium Problem"
+                                className="text-yellow-400 text-xs shrink-0 [text-shadow:0_0_8px_rgba(255,215,0,0.7)] "
+                              >
+                                <IoIosLock className="w-5 h-5"/>{" "}
+                                
+                              </span>
+                            )}
+                            <Link
+                              to={`/problem/${prob.slug}`}
+                              className={titleLinkStyle}
                             >
-                              <IoIosLock />
-                            </span>
-                          )}
+                              {prob.title}
+                            </Link>
+                            {/* 2. Keep the conditional rendering inside the flex container */}
+                            
+                          </div>
                         </td>
                         <td className={tableCellStyle}>
                           <DifficultyBadge difficulty={prob.difficulty} />

@@ -29,9 +29,9 @@ function App() {
   
   const location = useLocation();
 
-  const hideNavPaths = ['/login', '/signup', '/forget'];
+  const hideNavPaths = ['/login', '/signup', '/forget' ,];
+  const showNav = !hideNavPaths.includes(location.pathname) && !location.pathname.startsWith('/problem/');
 
-  const showNav = !hideNavPaths.includes(location.pathname);
 
   return (
     <>

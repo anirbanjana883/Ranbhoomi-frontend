@@ -184,19 +184,13 @@ function CreateProblemPage() {
   };
 
   // --- Submit Handler ---
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-
-    const tagsArray = tagInput
-      .split(",")
-      .map((tag) => tag.trim().toLowerCase())
-      .filter(Boolean);
-    const companyTagsArray = companyTagInput
-      .split(",")
-      .map((tag) => tag.trim().toLowerCase())
-      .filter(Boolean);
+    // Convert comma-separated tag strings to arrays
+    const tagsArray = tagInput.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
+    const companyTagsArray = companyTagInput.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
 
     const submissionData = {
       ...formData,
@@ -205,15 +199,17 @@ function CreateProblemPage() {
     };
 
     try {
-
       const { data: newProblem } = await axios.post(
         `${serverUrl}/api/problems/createproblem`,
         submissionData,
         { withCredentials: true }
       );
+
+      // --- REMOVED THE INCORRECT DISPATCH LINE ---
+
       toast.success(`Problem "${newProblem.title}" created successfully!`);
-      navigate(`/admin/problems`); 
-      
+      navigate(`/admin/problems`); // Navigate back to the management list
+
     } catch (err) {
       console.error("Create Problem Error:", err.response || err);
       toast.error(err.response?.data?.message || "Failed to create problem.");

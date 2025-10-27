@@ -24,6 +24,7 @@ const LoadingSpinner = () => (
 // --- Godfather Input ---
 const GodfatherInput = ({
   id,
+  name,
   label,
   value,
   onChange,
@@ -42,7 +43,7 @@ const GodfatherInput = ({
     <input
       type={type}
       id={id}
-      name={id}
+      name={name || id}
       value={value}
       onChange={onChange}
       required={required}
@@ -55,6 +56,7 @@ const GodfatherInput = ({
 // --- Godfather Textarea ---
 const GodfatherTextarea = ({
   id,
+  name,
   label,
   value,
   onChange,
@@ -72,7 +74,7 @@ const GodfatherTextarea = ({
     </label>
     <textarea
       id={id}
-      name={id}
+      name={name || id}
       value={value}
       onChange={onChange}
       required={required}
@@ -598,6 +600,7 @@ function EditProblemPage() {
               </h3>
               <GodfatherTextarea
                 id="new-input"
+                name="input"
                 label="Input"
                 value={newTestCase.input}
                 onChange={handleNewTestCaseChange}
@@ -606,6 +609,7 @@ function EditProblemPage() {
               />
               <GodfatherTextarea
                 id="new-output"
+                name="expectedOutput"
                 label="Expected Output"
                 value={newTestCase.expectedOutput}
                 onChange={handleNewTestCaseChange}

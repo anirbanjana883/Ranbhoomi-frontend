@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { serverUrl } from "../App";
+import { serverUrl } from "../../App";
 import {
   FaArrowLeft,
   FaRandom,

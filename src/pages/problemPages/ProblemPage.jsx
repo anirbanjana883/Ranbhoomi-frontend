@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { serverUrl } from "../App";
+import { serverUrl } from "../../App";
 import { FaArrowLeft, FaClock, FaUsers, FaRobot, FaCog } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
-import ProblemDescription from "../component/ProblemPageComponent/ProblemDescription";
-import CodeEditorPane from "../component/ProblemPageComponent/CodeEditorPane";
-import ConsolePane from "../component/ProblemPageComponent/ConsolePane";
+import ProblemDescription from "../../component/ProblemPageComponent/ProblemDescription";
+import CodeEditorPane from "../../component/ProblemPageComponent/CodeEditorPane";
+import ConsolePane from "../../component/ProblemPageComponent/ConsolePane";
 
 // --- Loading Spinner ---
 const LoadingSpinner = () => (
@@ -151,6 +151,7 @@ function ProblemPage() {
 
   // --- Editor Events ---
   const handleEditorChange = (val) => setCode(val || "");
+  
   const handleLanguageChange = (e) => {
     const lang = e.target.value;
     setSelectedLanguage(lang);

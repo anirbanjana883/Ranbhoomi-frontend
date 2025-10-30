@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { serverUrl } from "../App";
+import { serverUrl } from "../../App";
 import { toast } from "react-toastify";
 import ClipLoader from "react-spinners/ClipLoader";
 import { FaRegEye, FaRegEyeSlash, FaArrowLeftLong } from "react-icons/fa6";

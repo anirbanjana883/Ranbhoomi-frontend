@@ -1,23 +1,24 @@
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   FaGithub,
   FaLinkedin,
   FaArrowLeft,
   FaEdit,
   FaCog,
-} from "react-icons/fa"; 
+  FaTrophy,
+} from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { serverUrl } from "../App";
 
-// --- Loading Spinner --- (Refined Glow)
+// --- Loading Spinner ---
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-black">
     <div
       className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin
-                    [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"
+                 [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"
     ></div>
   </div>
 );
@@ -83,20 +84,15 @@ function ProfilePage() {
   if (error) {
     return (
       <div className="bg-black flex flex-col items-center justify-center min-h-screen text-center p-4">
-        <button
-          onClick={handleBack}
-          className="absolute top-24 left-6 z-10 /* ... back button styles ... */"
-        >
-          {" "}
-          {/* ... */}{" "}
-        </button>
         <h1 className="text-4xl font-bold text-red-500 animate-pulse [text-shadow:0_0_15px_rgba(255,0,0,0.6)]">
           404 - Not Found
         </h1>
         <p className="text-xl text-gray-400 mt-4">{error}</p>
         <Link
           to="/"
-          className="mt-8 px-6 py-2.5 bg-orange-600 text-white text-base font-bold rounded-lg shadow-[0_0_15px_rgba(255,69,0,0.5)] hover:shadow-[0_0_25px_rgba(255,69,0,0.7)] hover:bg-orange-700 transition-all transform hover:scale-105"
+          className="mt-8 px-6 py-2.5 bg-orange-600 text-white text-base font-bold rounded-lg
+                     shadow-[0_0_15px_rgba(255,69,0,0.5)] hover:shadow-[0_0_25px_rgba(255,69,0,0.7)]
+                     hover:bg-orange-700 transition-all transform hover:scale-105"
         >
           Return to Battlefield
         </Link>
@@ -106,25 +102,43 @@ function ProfilePage() {
 
   if (!user) return null;
 
-  // --- Theme Styles ---
-  const cardStyle = `bg-gradient-to-br from-black via-gray-950 to-black border border-orange-700/40 rounded-xl p-6 shadow-[0_0_30px_rgba(255,69,0,0.2)] transition-all duration-300 hover:shadow-[0_0_45px_rgba(255,69,0,0.3)] hover:border-orange-600/60`;
-  const headingStyle = `text-2xl font-bold text-white mb-4 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]`;
-  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2 px-4 text-sm shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 transform hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 disabled:bg-gray-700 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed disabled:scale-100`;
-  const buttonSecondaryStyle = `w-full bg-transparent border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-2 px-4 text-sm shadow-[0_0_10px_rgba(255,69,0,0.2)] transition-all duration-300 transform hover:bg-orange-950/30 hover:border-orange-600/80 hover:text-orange-400 hover:shadow-[0_0_20px_rgba(255,69,0,0.3)] hover:scale-105`;
+  // --- Refined Theme Styles ---
+  const cardStyle = `bg-black border border-orange-700/60 rounded-xl p-6 
+                     transition-all duration-300 
+                     hover:shadow-[0_0_25px_rgba(255,69,0,0.3)] hover:border-orange-600/80`;
+  const headingStyle = `text-xl font-semibold text-white mb-4 [text-shadow:0_0_6px_rgba(255,255,255,0.2)]`;
+  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2 px-4 text-sm 
+                              shadow-[0_0_15px_rgba(255,69,0,0.4)] 
+                              transition-all duration-300 transform 
+                              hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 
+                              disabled:bg-gray-700 disabled:text-gray-500 disabled:shadow-none 
+                              disabled:cursor-not-allowed disabled:scale-100`;
+  const buttonSecondaryStyle = `w-full bg-black border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-2 px-4 text-sm 
+                                shadow-[0_0_10px_rgba(255,69,0,0.15)] 
+                                transition-all duration-300 transform 
+                                hover:bg-orange-950/30 hover:border-orange-600/80 hover:text-orange-400 
+                                hover:shadow-[0_0_20px_rgba(255,69,0,0.3)] hover:scale-105`;
 
   return (
     <>
       {/* --- Floating Back Button --- */}
       <button
         onClick={handleBack}
-        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-orange-600/40 shadow-[0_0_20px_rgba(255,69,0,0.25)] text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 text-xs sm:text-sm transition-all duration-300 transform hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] hover:text-orange-400 hover:scale-105"
+        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md 
+                   border border-orange-600/50 shadow-[0_0_20px_rgba(255,69,0,0.2)] 
+                   text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 text-xs sm:text-sm 
+                   transition-all duration-300 transform 
+                   hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] 
+                   hover:text-orange-400 hover:scale-105"
       >
         <FaArrowLeft />
         <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="min-h-screen text-gray-300 pt-28 px-4 bg-black pb-20">
+      {/* --- Main Content --- */}
+      <div className="min-h-screen text-gray-300 pt-28 px-4 bg-black pb-20 godfather-bg">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
           {/* ### LEFT COLUMN ### */}
           <div className="lg:col-span-1 space-y-6">
             {/* --- Profile Card --- */}
@@ -135,23 +149,21 @@ function ProfilePage() {
                   `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username}`
                 }
                 alt={user.name}
-                className="w-32 h-32 rounded-full border-4 border-orange-500 object-cover mx-auto shadow-[0_0_25px_rgba(255,69,0,0.4)]"
+                className="w-32 h-32 rounded-full border-4 border-orange-500 object-cover mx-auto 
+                           shadow-[0_0_25px_rgba(255,69,0,0.4)]"
               />
-              <h1 className="text-3xl font-bold text-white mt-4 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
-                {" "}
-                {user.name}{" "}
+              <h1 className="text-2xl font-bold text-white mt-4 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
+                {user.name}
               </h1>
               <p className="text-lg text-orange-400 [text-shadow:0_0_12px_rgba(255,69,0,0.5)]">
-                {" "}
-                @{user.username}{" "}
+                @{user.username}
               </p>
               {isOwnProfile && (
                 <button
                   onClick={() => navigate("/editprofile")}
                   className={`mt-5 ${buttonSecondaryStyle} flex items-center justify-center gap-2`}
                 >
-                  {" "}
-                  <FaEdit /> Edit Profile{" "}
+                  <FaEdit /> Edit Profile
                 </button>
               )}
               <div className="flex justify-center gap-5 mt-5">
@@ -162,8 +174,7 @@ function ProfilePage() {
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-orange-400 transform hover:scale-110 transition-all duration-200"
                   >
-                    {" "}
-                    <FaGithub size={24} />{" "}
+                    <FaGithub size={24} />
                   </a>
                 )}
                 {user.linkedin && (
@@ -173,8 +184,7 @@ function ProfilePage() {
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-orange-400 transform hover:scale-110 transition-all duration-200"
                   >
-                    {" "}
-                    <FaLinkedin size={24} />{" "}
+                    <FaLinkedin size={24} />
                   </a>
                 )}
               </div>
@@ -185,25 +195,22 @@ function ProfilePage() {
               <h2 className={headingStyle}> Battle Stats </h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center text-sm">
-                  {" "}
-                  <span className="text-gray-400">Problems Solved</span>{" "}
+                  <span className="text-gray-400">Problems Solved</span>
                   <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
                     0
-                  </span>{" "}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  {" "}
-                  <span className="text-gray-400">Contests Joined</span>{" "}
+                  <span className="text-gray-400">Contests Joined</span>
                   <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
                     0
-                  </span>{" "}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  {" "}
-                  <span className="text-gray-400">Current Rating</span>{" "}
+                  <span className="text-gray-400">Current Rating</span>
                   <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
                     N/A
-                  </span>{" "}
+                  </span>
                 </div>
               </div>
             </div>
@@ -215,8 +222,7 @@ function ProfilePage() {
             <div className={cardStyle}>
               <h2 className={headingStyle}> About Me </h2>
               <p className="text-gray-300 leading-relaxed text-base">
-                {" "}
-                {user.description || "No description provided."}{" "}
+                {user.description || "No description provided."}
               </p>
             </div>
 
@@ -261,8 +267,7 @@ function ProfilePage() {
                       onClick={() => navigate("/admin/dashboard")}
                       className={`${buttonPrimaryStyle} flex items-center justify-center gap-2`}
                     >
-                      {" "}
-                      <FaCog /> Go to Master Dashboard{" "}
+                      <FaCog /> Go to Master Dashboard
                     </button>
                   )}
 
@@ -270,13 +275,22 @@ function ProfilePage() {
                   {(loggedInUser.role === "admin" ||
                     loggedInUser.role === "master") && (
                     <button
-                      onClick={() => navigate("/admin/problems")} // Link to the future problem management page
+                      onClick={() => navigate("/admin/problems")}
                       className={`${buttonSecondaryStyle} flex items-center justify-center gap-2`}
                     >
                       <FaEdit /> Manage Problems
                     </button>
                   )}
-                 
+                  {/* --- Manage contest Button --- */}
+                  {(loggedInUser.role === "admin" ||
+                    loggedInUser.role === "master") && (
+                    <button
+                      onClick={() => navigate("/admin/contests")}
+                      className={`${buttonSecondaryStyle} flex items-center justify-center gap-2`}
+                    >
+                      <FaTrophy /> Manage Contests
+                    </button>
+                  )}
 
                   {/* Admin Request Button */}
                   {loggedInUser.role === "user" && (

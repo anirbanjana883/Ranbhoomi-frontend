@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import logo from "../assets/ranbhoomi_main.png";
+import logo from "../../assets/ranbhoomi_main.png";
 import { FaRegEye, FaRegEyeSlash, FaGoogle } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { serverUrl } from "../App";
+import { serverUrl } from "../../App";
 import ClipLoader from "react-spinners/ClipLoader";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
-import { setUserData } from "../redux/userSlice";
+import { setUserData } from "../../redux/userSlice";
 import { signInWithPopup } from "firebase/auth";
-import { auth, provider } from "../../utils/firebase";
+import { auth, provider } from "../../../utils/firebase";
 
 function Login() {
   const [show, setShow] = useState(false);

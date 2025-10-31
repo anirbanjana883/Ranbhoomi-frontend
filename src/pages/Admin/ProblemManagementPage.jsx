@@ -79,7 +79,10 @@ function ProblemManagementPage() {
       if (selectedCompany !== "All") params.append("company", selectedCompany);
       // Fetch ALL fields needed for management, filtering happens via query params
       const endpoint = `${serverUrl}/api/problems/getallproblem?${params.toString()}`;
-      const { data } = await axios.get(endpoint, { withCredentials: true });
+      const { data } = await axios.get(
+        `${serverUrl}/api/problems/admin/all?${params.toString()}`,
+        { withCredentials: true }
+      );
       setProblems(data);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to fetch problems.");
@@ -155,30 +158,35 @@ function ProblemManagementPage() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [tagDropdownRef , companyDropdownRef]);
+  }, [tagDropdownRef, companyDropdownRef]);
 
- // --- Delete Handler ---
-const handleDelete = async (slug, title) => {
-    if (!window.confirm(`Are you sure you want to delete the problem "${title}"? This action cannot be undone.`)) {
-        return;
+  // --- Delete Handler ---
+  const handleDelete = async (slug, title) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the problem "${title}"? This action cannot be undone.`
+      )
+    ) {
+      return;
     }
     try {
-        
-        await axios.delete(`${serverUrl}/api/problems/deleteproblem/${slug}`, { withCredentials: true });
-        toast.success(`Problem "${title}" deleted successfully.`);
-        
-        fetchProblems(); 
+      await axios.delete(`${serverUrl}/api/problems/deleteproblem/${slug}`, {
+        withCredentials: true,
+      });
+      toast.success(`Problem "${title}" deleted successfully.`);
+
+      fetchProblems();
     } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to delete problem.");
+      toast.error(err.response?.data?.message || "Failed to delete problem.");
     }
-};
+  };
   // --- Event Handlers for Filters ---
   const handleTagSelect = (tag) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
-    const handleCompanySelect = (company) => {
+  const handleCompanySelect = (company) => {
     setSelectedCompany(company);
     setShowCompanyDropdown(false);
   };
@@ -407,6 +415,7 @@ const handleDelete = async (slug, title) => {
                   <tr>
                     <th className={headerStyle + " w-[45%]"}>Title</th>
                     <th className={headerStyle}>Difficulty</th>
+                    <th className={headerStyle}>Status</th>
                     <th className={headerStyle}>Tags</th>
                     <th className={headerStyle + " text-center"}>Actions</th>
                   </tr>
@@ -432,6 +441,18 @@ const handleDelete = async (slug, title) => {
                         </td>
                         <td className={cellStyle}>
                           <DifficultyBadge difficulty={prob.difficulty} />
+                        </td>
+
+                        <td className={cellStyle}>
+                          {prob.isPublished ? (
+                            <span className="px-2 py-0.5 bg-green-700/20 text-green-300 border border-green-600/60 rounded text-xs font-semibold">
+                              Published
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-purple-700/20 text-purple-300 border border-purple-600/60 rounded text-xs font-semibold">
+                              Hidden
+                            </span>
+                          )}
                         </td>
                         <td className={cellStyle}>
                           <div className="flex flex-wrap gap-1.5 max-w-[220px]">

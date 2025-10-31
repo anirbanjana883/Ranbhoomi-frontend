@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
-import { FaPlay, FaPaperPlane, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import React, { useState } from "react";
+import {
+  FaPlay,
+  FaPaperPlane,
+  FaCheckCircle,
+  FaTimesCircle,
+} from "react-icons/fa";
 
 // --- Tab Button Component ---
 // Note: This is duplicated from ProblemDescription.jsx.
@@ -54,23 +59,27 @@ function ConsolePane({
       <div className="flex-grow p-3 overflow-y-auto text-xs font-mono bg-black/40 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-black/50 no-scrollbar">
         {activeRightTab === "testcase" && (
           <div>
-            <p className="text-gray-400 mb-2">
-              Run against sample test cases:
-            </p>
+            <p className="text-gray-400 mb-2">Run against sample test cases:</p>
             {problemTestCases && problemTestCases.length > 0 ? (
-                problemTestCases.map((tc, index) => (
+              problemTestCases.map((tc, index) => (
                 <div
                   key={index}
                   className="p-2 bg-gray-900/50 border border-gray-700/50 rounded mb-2"
                 >
-                  <p className="text-gray-500 font-semibold text-xs">
-                    Case {index + 1}:{" "}
-                    <code className="text-orange-400">{tc.input}</code>
-                  </p>
+                  <div className="text-gray-400 text-xs">
+                    <p className="font-semibold text-gray-500 mb-1">
+                      Case {index + 1}:
+                    </p>
+                    <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-orange-300 font-mono text-[11px] leading-relaxed">
+                      {tc.input?.replace(/\\n/g, "\n")}
+                    </pre>
+                  </div>
                 </div>
               ))
             ) : (
-                <p className="text-gray-600 italic">No sample test cases provided.</p>
+              <p className="text-gray-600 italic">
+                No sample test cases provided.
+              </p>
             )}
           </div>
         )}
@@ -80,27 +89,41 @@ function ConsolePane({
               <p className="text-gray-600 italic">
                 (Run or Submit your code to see results...)
               </p>
-            ) : submissionResult.status === 'Judging' ? (
+            ) : submissionResult.status === "Judging" ? (
               <div className="flex items-center gap-2 text-yellow-400">
                 <div className="w-4 h-4 border-2 border-t-transparent border-yellow-400 rounded-full animate-spin"></div>
                 <span>Judging...</span>
               </div>
-            ) : submissionResult.status === 'Accepted' ? (
+            ) : submissionResult.status === "Accepted" ? (
               <div className="text-green-400 font-bold text-lg">
                 <FaCheckCircle className="inline mr-2" /> Accepted
               </div>
             ) : (
               <div className="text-red-400 font-bold text-lg">
-                <FaTimesCircle className="inline mr-2" /> {submissionResult.status}
+                <FaTimesCircle className="inline mr-2" />{" "}
+                {submissionResult.status}
               </div>
             )}
-            
+
             {/* Display detailed results */}
             {submissionResult && submissionResult.results && (
               <div className="mt-4 space-y-2">
                 {submissionResult.results.map((res, index) => (
-                  <div key={index} className={`p-2 rounded ${res.status === 'Passed' ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
-                    <span className={`font-semibold ${res.status === 'Passed' ? 'text-green-400' : 'text-red-400'}`}>
+                  <div
+                    key={index}
+                    className={`p-2 rounded ${
+                      res.status === "Passed"
+                        ? "bg-green-900/30"
+                        : "bg-red-900/30"
+                    }`}
+                  >
+                    <span
+                      className={`font-semibold ${
+                        res.status === "Passed"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
                       Test Case {index + 1}: {res.status}
                     </span>
                   </div>
@@ -125,7 +148,7 @@ function ConsolePane({
           disabled={isSubmitting}
           className={`${actionButtonStyle} ${submitButtonStyle}`}
         >
-          <FaPaperPlane /> {isSubmitting ? 'Judging...' : 'Submit'}
+          <FaPaperPlane /> {isSubmitting ? "Judging..." : "Submit"}
         </button>
       </div>
     </>

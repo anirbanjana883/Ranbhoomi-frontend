@@ -34,31 +34,33 @@ const DifficultyBadge = ({ difficulty }) => {
 };
 
 // --- Helper Component: Test Case Display ---
+// --- Helper Component: Test Case Display ---
 const TestCaseDisplay = ({ testCase, index }) => (
   <div className="mb-4 bg-gradient-to-br from-gray-950 via-black to-gray-950 p-4 rounded-lg border border-gray-700/50 shadow-sm">
     <p className="font-bold text-gray-300 mb-2 text-sm">Example {index + 1}:</p>
+
     <div className="space-y-2 text-xs font-mono">
       <div>
         <strong className="text-gray-500 font-sans text-[11px] uppercase tracking-wider">
-          {" "}
-          Input:{" "}
+          Input:
         </strong>
-        <code className="mt-1 block whitespace-pre-wrap bg-black/30 px-3 py-2 rounded text-orange-300/90 border border-gray-800/50">
-          {testCase.input}
-        </code>
+        <pre className="mt-1 whitespace-pre-wrap bg-black/30 px-3 py-2 rounded text-orange-300/90 border border-gray-800/50">
+          {testCase.input?.replace(/\\n/g, "\n")}
+        </pre>
       </div>
+
       <div>
         <strong className="text-gray-500 font-sans text-[11px] uppercase tracking-wider">
-          {" "}
-          Output:{" "}
+          Output:
         </strong>
-        <code className="mt-1 block whitespace-pre-wrap bg-black/30 px-3 py-2 rounded text-orange-300/90 border border-gray-800/50">
-          {testCase.expectedOutput}
-        </code>
+        <pre className="mt-1 whitespace-pre-wrap bg-black/30 px-3 py-2 rounded text-orange-300/90 border border-gray-800/50">
+          {testCase.expectedOutput?.replace(/\\n/g, "\n")}
+        </pre>
       </div>
     </div>
   </div>
 );
+
 
 // --- Helper Component: Tab Button ---
 const TabButton = ({ label, isActive, onClick }) => (

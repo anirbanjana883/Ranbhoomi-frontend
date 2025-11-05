@@ -1,127 +1,73 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { serverUrl } from "../../App.jsx"; // Adjust path
-import {
-  FaArrowLeft,
-  FaSave,
-  FaPlus,
-  FaTrashAlt,
-  FaSearch,
-} from "react-icons/fa";
+import { serverUrl } from "../../App.jsx"; 
+import { FaArrowLeft, FaPlus, FaTrashAlt, FaSave, FaSearch } from "react-icons/fa"; // Added FaSearch
 
-const GodfatherInput = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-  placeholder = "",
-}) => (
-  <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
-    </label>
-    <input
-      type={type}
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      placeholder={placeholder}
-      className={`w-full p-2.5 bg-gray-950/60 text-white rounded-md border border-orange-600/30 focus:outline-none focus:border-orange-500/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 text-sm ${
-        type === "date" || type === "time" ? "text-gray-300" : ""
-      }`}
-    />
+// --- Loading Spinner ---
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_30px_rgba(255,69,0,0.7),inset_0_0_8px_rgba(255,69,0,0.4)]"></div>
   </div>
 );
 
-const GodfatherTextarea = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  rows = 4,
-  required = false,
-  placeholder = "",
-}) => (
-  <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
-    </label>
-    <textarea
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full p-2.5 bg-gray-950/60 text-white rounded-md border border-orange-600/30 focus:outline-none focus:border-orange-500/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 text-sm resize-y font-mono"
-    />
-  </div>
+// --- Godfather Input ---
+const GodfatherInput = ({ id, name, label, value, onChange, type = "text", required = false, placeholder = "" }) => (
+    <div className="w-full mb-5">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1.5"> {label} </label>
+        <input 
+           type={type} id={id} name={name || id} value={value} onChange={onChange} required={required} placeholder={placeholder}
+           className={`w-full p-2.5 bg-black text-white rounded-md 
+                       border border-orange-700/60 
+                       focus:outline-none focus:border-orange-600/80 
+                       focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] 
+                       transition-all duration-300 text-sm
+                       ${type === 'date' || type === 'time' ? 'text-gray-300' : ''}`}
+        />
+    </div>
 );
 
-const GodfatherSelect = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  children,
-  required = false,
-}) => (
-  <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
-    </label>
-    <select
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      className="w-full p-2.5 bg-gray-950/60 text-white rounded-md border border-orange-600/30 focus:outline-none focus:border-orange-500/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 text-sm"
-    >
-      {children}
-    </select>
-  </div>
+// --- Godfather Textarea ---
+const GodfatherTextarea = ({ id, name, label, value, onChange, rows = 4, required = false, placeholder = "" }) => (
+     <div className="w-full mb-5">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1.5"> {label} </label>
+        <textarea 
+           id={id} name={name || id} value={value} onChange={onChange} required={required} placeholder={placeholder} rows={rows}
+           className="w-full p-2.5 bg-black text-white rounded-md 
+                      border border-orange-700/60
+                      focus:outline-none focus:border-orange-600/80 
+                      focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] 
+                      transition-all duration-300 text-sm resize-y font-mono"
+        />
+     </div>
 );
 
-// --- Helper function to get local date/time ---
+// --- Godfather Select Component ---
+const GodfatherSelect = ({ id, name, label, value, onChange, children, required = false }) => (
+    <div className="w-full mb-5">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1.5"> {label} </label>
+        <select
+           id={id} name={name || id} value={value} onChange={onChange} required={required}
+           className="w-full p-2.5 bg-black text-white rounded-md 
+                      border border-orange-700/60
+                      focus:outline-none focus:border-orange-600/80 
+                      focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] 
+                      transition-all duration-300 text-sm"
+        >
+            {children}
+        </select>
+    </div>
+);
+
+// Helper function to get current date
 const getLocalDate = () => new Date().toISOString().split("T")[0];
-const getLocalTime = () =>
-  new Date().toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
-const hours = Array.from({ length: 24 }, (_, i) =>
-  i.toString().padStart(2, "0")
-); // 00-23
-const minutes = Array.from({ length: 60 }, (_, i) =>
-  i.toString().padStart(2, "0")
-); // 00-59
+// Generate Time Options
+const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
 
-// --- NEW Problem Search & Select Component ---
+// --- Problem Search & Select Component (UPDATED) ---
 const ProblemSelector = ({
   allProblems,
   selectedProblems,
@@ -131,11 +77,13 @@ const ProblemSelector = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Filter problems that are not already selected and match the search term
+  // --- UPDATED FILTER ---
+  // Now filters for "isPublished === false"
   const filteredProblems = allProblems.filter(
     (p) =>
       !selectedProblems.some((sp) => sp._id === p._id) &&
-      p.title.toLowerCase().includes(searchTerm.toLowerCase())
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      p.isPublished === false // <-- THIS IS THE NEW RULE
   );
 
   return (
@@ -144,7 +92,7 @@ const ProblemSelector = ({
         htmlFor="problem-search"
         className="block text-sm font-medium text-gray-300 mb-1.5"
       >
-        Add Problems
+        Add Problems (Only unpublished problems are shown)
       </label>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -153,41 +101,53 @@ const ProblemSelector = ({
         <input
           type="text"
           id="problem-search"
-          placeholder="Search problems by title..."
+          placeholder="Search unpublished problems..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setShowDropdown(true)}
-          onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Delay to allow click
-          className="w-full p-2.5 pl-9 bg-gray-950/60 text-white rounded-md border border-orange-600/30 focus:outline-none focus:border-orange-500/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 text-sm"
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          className="w-full p-2.5 pl-9 bg-black text-white rounded-md 
+                     border border-orange-700/60 
+                     focus:outline-none focus:border-orange-600/80 
+                     focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] 
+                     transition-all duration-300 text-sm"
         />
         {/* Search Dropdown */}
-        {showDropdown && filteredProblems.length > 0 && (
+        {showDropdown && (
           <div className="absolute z-10 w-full mt-1 bg-black border border-orange-700/60 rounded-lg shadow-[0_0_20px_rgba(255,69,0,0.3)] max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-black/50">
-            {filteredProblems.map((prob) => (
-              <button
-                type="button"
-                key={prob._id}
-                onClick={() => {
-                  onAdd(prob);
-                  setSearchTerm("");
-                  setShowDropdown(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-orange-900/50 hover:text-orange-300"
-              >
-                {prob.title}{" "}
-                <span
-                  className={`text-xs ml-2 ${
-                    prob.difficulty === "Easy"
-                      ? "text-green-400"
-                      : prob.difficulty === "Medium"
-                      ? "text-yellow-400"
-                      : "text-red-400"
-                  }`}
+            {filteredProblems.length > 0 ? (
+              filteredProblems.map((prob) => (
+                <button
+                  type="button"
+                  key={prob._id}
+                  onClick={() => {
+                    onAdd(prob);
+                    setSearchTerm("");
+                    setShowDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-orange-900/50 hover:text-orange-300"
                 >
-                  ({prob.difficulty})
-                </span>
-              </button>
-            ))}
+                  {prob.title}{" "}
+                  <span
+                    className={`text-xs ml-2 ${
+                      prob.difficulty === "Easy"
+                        ? "text-green-400"
+                        : prob.difficulty === "Medium"
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    ({prob.difficulty})
+                  </span>
+                  {/* --- UPDATED --- Show "Hidden" tag */}
+                  <span className="ml-2 text-xs text-purple-400">(Hidden)</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-gray-500 italic">
+                No matching unpublished problems found.
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -204,6 +164,8 @@ const ProblemSelector = ({
             >
               <span className="text-sm text-white">
                 {index + 1}. {prob.title}
+                {/* --- UPDATED --- Show "Hidden" tag */}
+                {prob.isPublished === false && <span className="ml-2 text-xs text-purple-400">(Hidden)</span>}
               </span>
               <button
                 type="button"
@@ -221,6 +183,7 @@ const ProblemSelector = ({
   );
 };
 
+// --- Main Create Contest Page Component ---
 function CreateContestPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -234,22 +197,21 @@ function CreateContestPage() {
     endTimeMinute: "00",
   });
   const [loading, setLoading] = useState(false);
-
-  // --- NEW State for Problem Selection ---
   const [allProblems, setAllProblems] = useState([]);
   const [selectedProblems, setSelectedProblems] = useState([]);
   const [loadingProblems, setLoadingProblems] = useState(true);
 
-  // --- Fetch ALL problems for the selector component ---
+  // --- Fetch ALL problems ---
   useEffect(() => {
     const fetchAllProblems = async () => {
       try {
         setLoadingProblems(true);
+        // Use ADMIN route to get ALL problems (published and unpublished)
         const { data } = await axios.get(
-          `${serverUrl}/api/problems/getallproblem`,
+          `${serverUrl}/api/problems/admin/all`,
           { withCredentials: true }
         );
-        setAllProblems(data); // Store all problems
+        setAllProblems(data);
       } catch (err) {
         toast.error("Failed to load list of problems.");
       } finally {
@@ -264,8 +226,6 @@ function CreateContestPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  // --- Problem Selection Handlers ---
   const handleAddProblem = (problem) => {
     setSelectedProblems((prev) => [...prev, problem]);
   };
@@ -273,12 +233,12 @@ function CreateContestPage() {
     setSelectedProblems((prev) => prev.filter((p) => p._id !== problemId));
   };
 
+  // --- Submit Handler ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     const problemIdsArray = selectedProblems.map((p) => p._id);
-
     if (problemIdsArray.length === 0) {
       toast.error("Please add at least one problem to the contest.");
       setLoading(false);
@@ -319,8 +279,15 @@ function CreateContestPage() {
   };
 
   // --- Theme Styles ---
-  const cardStyle = `bg-gradient-to-br from-black via-gray-950 to-black border border-orange-700/40 rounded-xl p-6 sm:p-8 shadow-[0_0_30px_rgba(255,69,0,0.2)] transition-all duration-300 hover:shadow-[0_0_45px_rgba(255,69,0,0.3)] hover:border-orange-600/60 mb-6`;
-  const buttonPrimaryStyle = `w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg py-2.5 px-6 text-base shadow-[0_0_20px_rgba(255,69,0,0.5)] transition-all duration-300 transform hover:from-orange-700 hover:to-red-700 hover:shadow-[0_0_30px_rgba(255,69,0,0.7)] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`;
+  const cardStyle = `bg-black border border-orange-700/60 rounded-xl p-6 sm:p-8 
+                     shadow-[0_0_20px_rgba(255,69,0,0.2)] 
+                     transition-all duration-300 
+                     hover:shadow-[0_0_35px_rgba(255,69,0,0.3)] hover:border-orange-600/80 mb-6`;
+  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2.5 px-6 text-base 
+                               shadow-[0_0_15px_rgba(255,69,0,0.4)] 
+                               transition-all duration-300 transform 
+                               hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 
+                               disabled:opacity-50 disabled:cursor-not-allowed`;
 
   return (
     <>
@@ -328,7 +295,7 @@ function CreateContestPage() {
       <button
         onClick={() => navigate("/admin/contests")}
         className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md 
-                           border border-orange-600/40 shadow-[0_0_20px_rgba(255,69,0,0.25)] 
+                           border border-orange-600/50 shadow-[0_0_20px_rgba(255,69,0,0.2)] 
                            text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 
                            text-xs sm:text-sm transition-all duration-300 transform 
                            hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] 
@@ -448,8 +415,7 @@ function CreateContestPage() {
               </div>
             </div>
 
-            {/* --- NEW Problem Selector Component --- */}
-            <div className="pt-4 border-t border-orange-800/30">
+            <div className="pt-4 border-t border-orange-800/50">
               {loadingProblems ? (
                 <div className="text-gray-500">Loading problems...</div>
               ) : (
@@ -469,13 +435,7 @@ function CreateContestPage() {
                 disabled={loading || loadingProblems}
                 className={buttonPrimaryStyle}
               >
-                {loading ? (
-                  "Creating..."
-                ) : (
-                  <>
-                    <FaSave className="inline mr-2" /> Create Contest
-                  </>
-                )}
+                {loading ? 'Creating...' : <><FaSave className='inline mr-2'/> Create Contest</>}
               </button>
             </div>
           </form>

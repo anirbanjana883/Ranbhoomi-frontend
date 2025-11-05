@@ -26,6 +26,7 @@ import ContestInterface from './pages/contestPages/ContestInterface';
 import CreateContestPage from './pages/Admin/CreateContestPage';
 import AdminContestPage from './pages/Admin/AdminContestPage';
 import EditContestPage from './pages/Admin/EditContestPage';
+import ContestRankingPage from './pages/contestPages/ContestRankingPage';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -81,8 +82,9 @@ function App() {
         <Route path='/contests' element={userData ? <ContestListPage /> : <Navigate to="/login" />} />
         <Route path='/contest/:slug' element={userData ? <ContestDetailsPage /> : <Navigate to="/login" />} />
         <Route path='/contest/:slug/problem/:problemSlug' element={userData ? <ContestInterface /> : <Navigate to="/login" />} />
+        <Route path='/contest/:slug/ranking' element={userData ? <ContestRankingPage /> : <Navigate to="/login" />} />
 
-        {/* --- DELETE THE STRAY ROUTES FROM HERE --- */}
+        
       </Routes>
     </>
   );

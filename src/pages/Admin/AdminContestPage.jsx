@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { serverUrl } from "../../App.jsx"; // Adjust path if needed
+import { serverUrl } from "../../App.jsx"; // Adjust path
 import {
   FaArrowLeft,
   FaEdit,
@@ -11,6 +11,8 @@ import {
   FaPlay,
   FaCalendarAlt,
   FaHistory,
+  FaTrophy,
+  FaSyncAlt, // <-- Make sure FaTrophy & FaSyncAlt are imported
 } from "react-icons/fa";
 
 // --- Loading Spinner ---
@@ -19,33 +21,6 @@ const LoadingSpinner = () => (
     <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"></div>
   </div>
 );
-
-// --- Status Badge ---
-const ContestStatusBadge = ({ startTime, endTime }) => {
-  const now = new Date();
-  const start = new Date(startTime);
-  const end = new Date(endTime);
-
-  if (start <= now && end > now) {
-    return (
-      <span className="px-2 py-0.5 bg-green-700/20 text-green-300 border border-green-600/60 shadow-[0_0_10px_rgba(0,255,0,0.3)] text-xs font-bold rounded-full">
-        Live
-      </span>
-    );
-  }
-  if (start > now) {
-    return (
-      <span className="px-2 py-0.5 bg-blue-700/20 text-blue-300 border border-blue-600/60 shadow-[0_0_10px_rgba(59,130,246,0.3)] text-xs font-bold rounded-full">
-        Upcoming
-      </span>
-    );
-  }
-  return (
-    <span className="px-2 py-0.5 bg-gray-700/50 text-gray-400 border border-gray-600/60 text-xs font-bold rounded-full">
-      Past
-    </span>
-  );
-};
 
 // --- Main Page Component ---
 function AdminContestPage() {
@@ -56,6 +31,8 @@ function AdminContestPage() {
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  // --- State to track which button is loading ---
+  const [calculatingSlug, setCalculatingSlug] = useState(null);
 
   // Fetch all contests
   const fetchContests = useCallback(async () => {
@@ -87,7 +64,7 @@ function AdminContestPage() {
       return;
     }
     try {
-      // We need to create this backend route
+      // Assumes DELETE /api/contests/:slug exists
       await axios.delete(`${serverUrl}/api/contests/${slug}`, {
         withCredentials: true,
       });
@@ -95,6 +72,33 @@ function AdminContestPage() {
       fetchContests(); // Refresh list
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete contest.");
+    }
+  };
+
+  // --- Calculate Ranking Handler ---
+  const handleCalculate = async (slug, title) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to (re)calculate rankings for "${title}"? This will process all submissions.`
+      )
+    ) {
+      return;
+    }
+    setCalculatingSlug(slug); // Set loading for this specific row
+    try {
+      // Calls POST /api/contests/:slug/calculate
+      const { data } = await axios.post(
+        `${serverUrl}/api/contests/${slug}/calculate`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success(`Rankings for "${title}" calculated!`);
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || "Failed to calculate rankings."
+      );
+    } finally {
+      setCalculatingSlug(null); // Reset loading
     }
   };
 
@@ -113,9 +117,12 @@ function AdminContestPage() {
   const headerStyle = `p-4 text-xs font-semibold text-orange-400 uppercase tracking-wider [text-shadow:0_0_10px_rgba(255,69,0,0.6)]`;
   const rowStyle = `border-t border-orange-800/50 transition-colors duration-200 hover:bg-orange-950/20`;
   const cellStyle = `p-4 text-sm align-middle`;
-  const actionButtonStyle = `p-2 rounded transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black`;
+  const actionButtonStyle = `p-2 rounded transition-transform transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed`;
   const editButtonStyle = `bg-blue-900/30 text-blue-300 border border-blue-600/60 shadow-[0_0_10px_rgba(59,130,246,0.4)] hover:bg-blue-800/50 hover:text-blue-200 focus:ring-blue-500`;
   const deleteButtonStyle = `bg-red-900/30 text-red-400 border border-red-600/60 shadow-[0_0_10px_rgba(255,0,0,0.4)] hover:bg-red-800/50 hover:text-red-300 focus:ring-red-500`;
+  // --- New Button Style ---
+  const calculateButtonStyle = `bg-green-900/30 text-green-300 border border-green-600/60 shadow-[0_0_10px_rgba(0,255,0,0.4)] hover:bg-green-800/50 hover:text-green-200 focus:ring-green-500`;
+
   const createButtonStyle = `flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg py-2 px-5 text-sm 
                                shadow-[0_0_20px_rgba(255,69,0,0.5)] 
                                transition-all duration-300 transform 
@@ -173,6 +180,7 @@ function AdminContestPage() {
                       {new Date(contest.endTime).toLocaleString()}
                     </td>
                     <td className={cellStyle + " text-center"}>
+                      {/* --- UPDATED ACTIONS --- */}
                       <div className="inline-flex gap-2">
                         <Link
                           to={`/admin/contests/edit/${contest.slug}`}
@@ -190,6 +198,25 @@ function AdminContestPage() {
                         >
                           <FaTrashAlt size={14} />
                         </button>
+
+                        {/* --- THIS IS THE NEW BUTTON --- */}
+                        {(title === "Live Now" ||
+                          title === "Past Contests") && (
+                          <button
+                            onClick={() =>
+                              handleCalculate(contest.slug, contest.title)
+                            }
+                            disabled={calculatingSlug === contest.slug}
+                            className={`${actionButtonStyle} ${calculateButtonStyle}`}
+                            title="Calculate Rankings"
+                          >
+                            {calculatingSlug === contest.slug ? (
+                              <FaSyncAlt size={14} className="animate-spin" />
+                            ) : (
+                              <FaTrophy size={14} />
+                            )}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -206,14 +233,7 @@ function AdminContestPage() {
     <>
       {/* Back Button */}
       <button
-        onClick={() =>
-          navigate(
-            "/profile/" +
-              (localStorage.getItem("user")
-                ? JSON.parse(localStorage.getItem("user")).username
-                : "")
-          )
-        } // Adjust as needed
+        onClick={() => navigate(-1)} // Go back (likely to profile)
         className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md 
                            border border-orange-600/40 shadow-[0_0_20px_rgba(255,69,0,0.25)] 
                            text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 
@@ -237,7 +257,6 @@ function AdminContestPage() {
             </Link>
           </div>
 
-          {/* Render tables for each category */}
           {renderContestTable(
             "Live Now",
             <FaPlay size={20} className="text-green-500 animate-pulse" />,

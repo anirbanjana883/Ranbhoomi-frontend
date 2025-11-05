@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { serverUrl } from '../../App'; // Adjust path if needed
+import { serverUrl } from '../../App'; 
 import { FaArrowLeft, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 // --- Loading Spinner ---
@@ -39,7 +39,7 @@ function ContestDetailsPage() {
             setContest(data);
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to fetch contest details.");
-            navigate("/contests"); // Redirect back to list if contest not found
+            navigate("/contests"); 
         } finally {
             setLoading(false);
         }
@@ -55,7 +55,7 @@ function ContestDetailsPage() {
         try {
             const { data } = await axios.post(`${serverUrl}/api/contests/${slug}/register`, {}, { withCredentials: true });
             toast.success(data.message);
-            // Re-fetch contest data to update the "isRegistered" status
+            
             fetchContest();
         } catch (err) {
             toast.error(err.response?.data?.message || "Registration failed.");
@@ -151,8 +151,17 @@ function ContestDetailsPage() {
                         )}
                          {contestStatus === 'live' && (
                             <button
-                                // Later, this will navigate to the contest interface
-                                onClick={() => toast.info("Navigating to live contest... (Not implemented)")}
+                                onClick={() => {
+                                    // Make sure contest has problems
+                                    if (contest.problems && contest.problems.length > 0) {
+                                        // Get the slug of the first problem
+                                        const firstProblemSlug = contest.problems[0].problem.slug;
+                                        // Navigate to the contest arena, starting with the first problem
+                                        navigate(`/contest/${contest.slug}/problem/${firstProblemSlug}`);
+                                    } else {
+                                        toast.error("This contest has no problems loaded.");
+                                    }
+                                }}
                                 className="w-full py-2.5 px-5 bg-green-600 text-white font-bold rounded-lg
                                            shadow-[0_0_20px_rgba(0,255,0,0.5)] animate-pulse
                                            transition-all duration-300 transform hover:scale-105"
@@ -162,8 +171,8 @@ function ContestDetailsPage() {
                         )}
                         {contestStatus === 'past' && (
                              <button
-                                // Later, this will navigate to rankings
-                                onClick={() => toast.info("Navigating to rankings... (Not implemented)")}
+                                
+                                onClick={() => navigate(`/contest/${contest.slug}/ranking`)}
                                 className="w-full py-2.5 px-5 bg-gray-700 text-gray-300 font-bold rounded-lg
                                            transition-all duration-300 transform hover:bg-gray-600"
                             >

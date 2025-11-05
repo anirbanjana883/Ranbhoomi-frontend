@@ -34,7 +34,7 @@ const DifficultyBadge = ({ difficulty }) => {
 };
 
 // --- Helper Component: Test Case Display ---
-// --- Helper Component: Test Case Display ---
+
 const TestCaseDisplay = ({ testCase, index }) => (
   <div className="mb-4 bg-gradient-to-br from-gray-950 via-black to-gray-950 p-4 rounded-lg border border-gray-700/50 shadow-sm">
     <p className="font-bold text-gray-300 mb-2 text-sm">Example {index + 1}:</p>
@@ -60,7 +60,6 @@ const TestCaseDisplay = ({ testCase, index }) => (
     </div>
   </div>
 );
-
 
 // --- Helper Component: Tab Button ---
 const TabButton = ({ label, isActive, onClick }) => (
@@ -119,6 +118,7 @@ function ProblemDescription({
   setSubmissions,
   loadingSubmissions,
   setLoadingSubmissions,
+  isContestMode = false
 }) {
   // --- NEW STATE for Solution ---
   const [solution, setSolution] = useState(null);
@@ -191,11 +191,13 @@ function ProblemDescription({
           isActive={activeLeftTab === "description"}
           onClick={() => setActiveLeftTab("description")}
         />
-        <TabButton
-          label="Solution"
-          isActive={activeLeftTab === "solution"}
-          onClick={() => setActiveLeftTab("solution")}
-        />
+        {!isContestMode && (
+            <TabButton 
+              label="Solution" 
+              isActive={activeLeftTab === "solution"} 
+              onClick={() => setActiveLeftTab("solution")} 
+            />
+        )}
         <TabButton
           label="Submissions"
           isActive={activeLeftTab === "submissions"}
@@ -254,78 +256,84 @@ function ProblemDescription({
         )}
 
         {/* --- SOLUTION TAB --- */}
-{/* --- SOLUTION TAB (Refined) --- */}
-{activeLeftTab === "solution" && (
-  <div>
-    {loadingSolution && (
-      <div className="flex justify-center items-center h-48">
-        <div className="w-12 h-12 border-4 border-t-transparent border-orange-500 rounded-full animate-spin"></div>
-      </div>
-    )}
 
-    {!loadingSolution && solution && (
-      (() => {
-        // --- Logic to split the solution string ---
-        const codeBlockIndex = solution.indexOf("```");
-        let explanation = solution;
-        let codeSolution = "";
-
-        if (codeBlockIndex !== -1) {
-          explanation = solution.substring(0, codeBlockIndex);
-          codeSolution = solution.substring(codeBlockIndex);
-        }
-        // --- End of logic ---
-
-        return (
-          <>
-            {/* --- 1. The Explanation --- */}
-            <h2 className="text-xl font-bold text-white mb-3 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
-              Approach
-            </h2>
-            <article className="max-w-none text-gray-300 problem-description-markdown">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                {explanation}
-              </ReactMarkdown>
-            </article>
-
-            {/* --- 2. The Code Block --- */}
-            {codeSolution && (
-              <div className="mt-6">
-                <h2 className="text-xl font-bold text-white mb-3 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
-                  Code Solution
-                </h2>
-                {/* This <article> will now *only* contain the code block(s) */}
-                <article className="max-w-none text-gray-300 problem-description-markdown">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                    {codeSolution}
-                  </ReactMarkdown>
-                </article>
+        {activeLeftTab === "solution" && (
+          <div>
+            {loadingSolution && (
+              <div className="flex justify-center items-center h-48">
+                <div className="w-12 h-12 border-4 border-t-transparent border-orange-500 rounded-full animate-spin"></div>
               </div>
             )}
-          </>
-        );
-      })()
-    )}
 
-    {!loadingSolution && solutionError && (
-      /* --- Placeholder for "Solution Locked" --- */
-      <div className="flex flex-col items-center justify-center h-full text-center p-4 mt-10">
-        <div className="p-8 bg-black border-2 border-orange-800/60 rounded-xl shadow-[0_0_40px_rgba(255,69,0,0.3)]">
-          <IoIosLock
-            size={50}
-            className="text-yellow-400 mb-3 [text-shadow:0_0_15px_rgba(255,215,0,0.7)]"
-          />
-          <h2 className="text-xl font-bold text-white [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
-            Solution Locked
-          </h2>
-          <p className="text-gray-400 mt-2 text-sm max-w-xs">
-            {solutionError} 
-          </p>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+            {!loadingSolution &&
+              solution &&
+              (() => {
+                
+                const codeBlockIndex = solution.indexOf("```");
+                let explanation = solution;
+                let codeSolution = "";
+
+                if (codeBlockIndex !== -1) {
+                  explanation = solution.substring(0, codeBlockIndex);
+                  codeSolution = solution.substring(codeBlockIndex);
+                }
+                
+
+                return (
+                  <>
+                    {/* --- 1. The Explanation --- */}
+                    <h2 className="text-xl font-bold text-white mb-3 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
+                      Approach
+                    </h2>
+                    <article className="max-w-none text-gray-300 problem-description-markdown">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                      >
+                        {explanation}
+                      </ReactMarkdown>
+                    </article>
+
+                    {/* --- 2. The Code Block --- */}
+                    {codeSolution && (
+                      <div className="mt-6">
+                        <h2 className="text-xl font-bold text-white mb-3 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
+                          Code Solution
+                        </h2>
+                        {/* This <article> will now *only* contain the code block(s) */}
+                        <article className="max-w-none text-gray-300 problem-description-markdown">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                          >
+                            {codeSolution}
+                          </ReactMarkdown>
+                        </article>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+            {!loadingSolution && solutionError && (
+              /* --- Placeholder for "Solution Locked" --- */
+              <div className="flex flex-col items-center justify-center h-full text-center p-4 mt-10">
+                <div className="p-8 bg-black border-2 border-orange-800/60 rounded-xl shadow-[0_0_40px_rgba(255,69,0,0.3)]">
+                  <IoIosLock
+                    size={50}
+                    className="text-yellow-400 mb-3 [text-shadow:0_0_15px_rgba(255,215,0,0.7)]"
+                  />
+                  <h2 className="text-xl font-bold text-white [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
+                    Solution Locked
+                  </h2>
+                  <p className="text-gray-400 mt-2 text-sm max-w-xs">
+                    {solutionError}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* --- SUBMISSIONS TAB --- */}
         {activeLeftTab === "submissions" && (

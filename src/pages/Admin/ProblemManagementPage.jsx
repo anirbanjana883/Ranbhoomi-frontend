@@ -449,7 +449,7 @@ function ProblemManagementPage() {
                               Published
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-purple-700/20 text-purple-300 border border-purple-600/60 rounded text-xs font-semibold">
+                            <span className="px-2 py-0.5 bg-red-700/20 text-red-300 border border-purple-600/60 rounded text-xs font-semibold">
                               Hidden
                             </span>
                           )}

@@ -268,7 +268,7 @@ function AdminContestPage() {
             contests.upcoming
           )}
           {renderContestTable(
-            "Past",
+            "Past Contests",
             <FaHistory size={20} className="text-gray-500" />,
             contests.past
           )}

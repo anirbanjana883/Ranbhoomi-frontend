@@ -27,6 +27,8 @@ import CreateContestPage from './pages/Admin/CreateContestPage';
 import AdminContestPage from './pages/Admin/AdminContestPage';
 import EditContestPage from './pages/Admin/EditContestPage';
 import ContestRankingPage from './pages/contestPages/ContestRankingPage';
+import InterviewLobby from './pages/interviewPages/InterviewLobby';
+import InterviewRoom from './pages/interviewPages/InterviewRoom';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -37,7 +39,10 @@ function App() {
   const location = useLocation();
 
   const hideNavPaths = ['/login', '/signup', '/forget' ,];
-  const showNav = !hideNavPaths.includes(location.pathname) && !location.pathname.startsWith('/problem/');
+
+  const showNav = !hideNavPaths.includes(location.pathname) && 
+                !location.pathname.startsWith('/problem/') && 
+                !location.pathname.startsWith('/interview/room/');
 
 
   return (
@@ -84,6 +89,10 @@ function App() {
         <Route path='/contest/:slug/problem/:problemSlug' element={userData ? <ContestInterface /> : <Navigate to="/login" />} />
         <Route path='/contest/:slug/ranking' element={userData ? <ContestRankingPage /> : <Navigate to="/login" />} />
 
+        {/* interview routes */}
+        <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
+        <Route path='/interview/room/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
+        
         
       </Routes>
     </>

@@ -2,11 +2,14 @@
 
 @import "tailwindcss";
 
+
 body {
   background-color: #000000;
   color: #D3D3D3;
   font-family: 'Inter', sans-serif; /* This will now work */
 }
+
+
 
 
 .fiery-gradient-text {
@@ -110,3 +113,4 @@ body {
 .no-scrollbar {
     -ms-overflow-style: none;
 }
+

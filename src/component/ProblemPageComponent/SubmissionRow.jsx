@@ -3,6 +3,17 @@ import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 function SubmissionRow({ submission }) {
     // Check status for styling
+
+    if (!submission) {
+    return (
+      <div className="p-3 bg-gray-900 border border-gray-700 rounded-lg text-gray-500 italic text-sm">
+        No submission data available
+      </div>
+    );
+  }
+
+  // Safely read fields
+    // const status = submission.status || "Unknown";
     const isAccepted = submission.status === 'Accepted';
     const statusColor = isAccepted 
         ? 'text-green-400 border-green-700/50 [text-shadow:0_0_8px_rgba(0,255,0,0.4)]'

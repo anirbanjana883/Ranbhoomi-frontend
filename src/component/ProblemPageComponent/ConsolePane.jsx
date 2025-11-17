@@ -1,80 +1,122 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  FaPlay,
-  FaPaperPlane,
   FaCheckCircle,
   FaTimesCircle,
+  FaHourglassHalf,
 } from "react-icons/fa";
 
-// --- Tab Button Component ---
-// Note: This is duplicated from ProblemDescription.jsx.
-// For a cleaner project, you could move this to its own file like `TabButton.jsx`
-// and import it in both components.
+// --- Themed Tab Button ---
 const TabButton = ({ label, isActive, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-3 sm:px-4 py-3 text-sm font-semibold border-b-2 transition-all duration-200
-                  ${
-                    isActive
-                      ? "text-orange-400 border-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.5)]"
-                      : "text-gray-500 border-transparent hover:text-gray-300 hover:border-gray-700"
-                  }`}
+    className={`px-4 py-3 text-sm font-semibold transition-all duration-200
+      ${
+        isActive
+          ? "text-orange-400 border-b-2 border-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.5)]"
+          : "text-gray-500 border-b-2 border-transparent hover:text-gray-300 hover:border-gray-700"
+      }`}
   >
     {label}
   </button>
 );
 
-// --- Main Component for the Bottom-Right Pane ---
-function ConsolePane({
-  problemTestCases, // The sample test cases
-  submissionResult, // The result object from polling
-  isSubmitting,
-  handleSubmit,
-  handleRun, // Add handleRun later
-}) {
-  const [activeRightTab, setActiveRightTab] = useState("testcase");
+// --- Themed Test Case Box ---
+const ThemedTestCase = ({ testCase, index }) => (
+  <div className="p-3 bg-gray-950/50 border border-orange-800/40 rounded-lg mb-2">
+    <p className="font-bold text-orange-400 mb-2 text-sm">
+      Case {index + 1}:
+    </p>
+    <div className="text-gray-400 text-xs space-y-2">
+      <div>
+        <p className="font-semibold text-gray-500 mb-1">Input:</p>
+        <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-gray-200 font-mono text-[13px] leading-relaxed">
+          {testCase.input?.replace(/\\n/g, "\n")}
+        </pre>
+      </div>
+      <div>
+        <p className="font-semibold text-gray-500 mb-1">Expected Output:</p>
+        <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-gray-200 font-mono text-[13px] leading-relaxed">
+          {testCase.expectedOutput?.replace(/\\n/g, "\n")}
+        </pre>
+      </div>
+    </div>
+  </div>
+);
 
-  // --- Godfather Styles ---
-  const paneHeaderStyle = `p-3 px-4 text-sm font-semibold text-gray-400 border-b-2 border-orange-800/60 bg-gradient-to-t from-black/60 to-gray-950/60 backdrop-blur-sm flex justify-between items-center shrink-0`;
-  const actionButtonStyle = `px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 ease-in-out transform flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 disabled:hover:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black`;
-  const runButtonStyle = `bg-gradient-to-b from-gray-700 to-gray-800 border border-gray-600/80 text-gray-300 hover:from-gray-600 hover:to-gray-700 hover:text-white hover:border-gray-500 hover:scale-105 hover:-translate-y-0.5 shadow-[0_0_12px_rgba(150,150,150,0.4)] hover:shadow-[0_0_20px_rgba(150,150,150,0.6)] focus:ring-gray-500`;
-  const submitButtonStyle = `bg-gradient-to-r from-orange-600 to-red-700 text-white shadow-[0_0_18px_rgba(255,69,0,0.6)] hover:from-orange-700 hover:to-red-800 hover:shadow-[0_0_35px_rgba(255,69,0,0.9)] hover:scale-105 hover:-translate-y-0.5 focus:ring-orange-500`;
+// --- Themed Result Status ---
+const SubmissionStatus = ({ result }) => {
+  if (!result) {
+    return (
+      <p className="text-gray-600 italic">
+        (Run or Submit your code to see results...)
+      </p>
+    );
+  }
 
+  if (result.status === "Judging" || result.status === "Pending") {
+    return (
+      <div className="flex items-center gap-2 text-yellow-400 font-bold text-lg">
+        <div className="w-5 h-5 border-2 border-t-transparent border-yellow-400 rounded-full animate-spin"></div>
+        <span>{result.status}...</span>
+      </div>
+    );
+  }
+
+  if (result.status === "Accepted") {
+    return (
+      <div className="text-green-400 font-bold text-xl [text-shadow:0_0_10px_rgba(0,255,0,0.5)]">
+        <FaCheckCircle className="inline mr-2" /> Accepted
+      </div>
+    );
+  }
+
+  // Any other status (Wrong Answer, TLE, etc.)
   return (
-    <>
-      <div className={`${paneHeaderStyle} !p-0 !px-2`}>
+    <div className="text-red-400 font-bold text-xl [text-shadow:0_0_10px_rgba(255,0,0,0.5)]">
+      <FaTimesCircle className="inline mr-2" /> {result.status}
+    </div>
+  );
+};
+
+// --- Main Console Pane Component ---
+function ConsolePane({
+  problemTestCases,
+  submissionResult,
+  isSubmitting,
+  // handleSubmit and handleRun are no longer needed here
+  activeRightTab,
+  setActiveRightTab,
+}) {
+  return (
+    // This component must fill its parent
+    <div className="flex flex-col h-full bg-black">
+      {/* --- Tab Header --- */}
+      <div className="flex-shrink-0 flex items-center border-b border-orange-900/40">
         <TabButton
           label="Testcase"
           isActive={activeRightTab === "testcase"}
           onClick={() => setActiveRightTab("testcase")}
         />
         <TabButton
-          label="Run Result"
+          label="Result"
           isActive={activeRightTab === "result"}
           onClick={() => setActiveRightTab("result")}
         />
       </div>
 
       {/* --- Console/Output Area --- */}
-      <div className="flex-grow p-3 overflow-y-auto text-xs font-mono bg-black/40 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-black/50 no-scrollbar">
+      <div className="flex-grow p-4 overflow-y-auto text-sm font-mono scrollbar-thin scrollbar-thumb-orange-800/50 scrollbar-track-black/50">
+        
+        {/* --- Testcase Tab Content --- */}
         {activeRightTab === "testcase" && (
           <div>
-            <p className="text-gray-400 mb-2">Run against sample test cases:</p>
             {problemTestCases && problemTestCases.length > 0 ? (
               problemTestCases.map((tc, index) => (
-                <div
-                  key={index}
-                  className="p-2 bg-gray-900/50 border border-gray-700/50 rounded mb-2"
-                >
-                  <div className="text-gray-400 text-xs">
-                    <p className="font-semibold text-gray-500 mb-1">
-                      Case {index + 1}:
-                    </p>
-                    <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-orange-300 font-mono text-[11px] leading-relaxed">
-                      {tc.input?.replace(/\\n/g, "\n")}
-                    </pre>
-                  </div>
-                </div>
+                <ThemedTestCase
+                  key={tc._id || index}
+                  testCase={tc}
+                  index={index}
+                />
               ))
             ) : (
               <p className="text-gray-600 italic">
@@ -83,27 +125,11 @@ function ConsolePane({
             )}
           </div>
         )}
+
+        {/* --- Result Tab Content --- */}
         {activeRightTab === "result" && (
           <div>
-            {!submissionResult ? (
-              <p className="text-gray-600 italic">
-                (Run or Submit your code to see results...)
-              </p>
-            ) : submissionResult.status === "Judging" ? (
-              <div className="flex items-center gap-2 text-yellow-400">
-                <div className="w-4 h-4 border-2 border-t-transparent border-yellow-400 rounded-full animate-spin"></div>
-                <span>Judging...</span>
-              </div>
-            ) : submissionResult.status === "Accepted" ? (
-              <div className="text-green-400 font-bold text-lg">
-                <FaCheckCircle className="inline mr-2" /> Accepted
-              </div>
-            ) : (
-              <div className="text-red-400 font-bold text-lg">
-                <FaTimesCircle className="inline mr-2" />{" "}
-                {submissionResult.status}
-              </div>
-            )}
+            <SubmissionStatus result={submissionResult} />
 
             {/* Display detailed results */}
             {submissionResult && submissionResult.results && (
@@ -111,7 +137,7 @@ function ConsolePane({
                 {submissionResult.results.map((res, index) => (
                   <div
                     key={index}
-                    className={`p-2 rounded ${
+                    className={`p-3 rounded-lg ${
                       res.status === "Passed"
                         ? "bg-green-900/30"
                         : "bg-red-900/30"
@@ -126,6 +152,7 @@ function ConsolePane({
                     >
                       Test Case {index + 1}: {res.status}
                     </span>
+                    {/* You could add more details here later */}
                   </div>
                 ))}
               </div>
@@ -134,24 +161,9 @@ function ConsolePane({
         )}
       </div>
 
-      {/* --- Bottom Action Bar --- */}
-      <div className="p-3 flex justify-end items-center gap-4 bg-gradient-to-t from-black via-gray-950/60 to-black/40 border-t-2 border-orange-800/60">
-        <button
-          disabled={isSubmitting} // Placeholder: implement handleRun
-          onClick={() => toast.info("'Run Code' feature not implemented yet.")}
-          className={`${actionButtonStyle} ${runButtonStyle}`}
-        >
-          <FaPlay /> Run
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className={`${actionButtonStyle} ${submitButtonStyle}`}
-        >
-          <FaPaperPlane /> {isSubmitting ? "Judging..." : "Submit"}
-        </button>
-      </div>
-    </>
+      {/* --- Bottom Action Bar (REMOVED) --- */}
+      {/* The Run and Submit buttons are now in the header */}
+    </div>
   );
 }
 

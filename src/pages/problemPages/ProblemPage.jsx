@@ -3,16 +3,19 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { serverUrl } from "../../App";
-import { FaArrowLeft, FaClock, FaUsers, FaRobot, FaCog } from "react-icons/fa";
+import { FaArrowLeft, FaPlay, FaPaperPlane, FaRobot, FaCog } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
+
+// Import your components
 import ProblemDescription from "../../component/ProblemPageComponent/ProblemDescription";
 import CodeEditorPane from "../../component/ProblemPageComponent/CodeEditorPane";
 import ConsolePane from "../../component/ProblemPageComponent/ConsolePane";
 
 // --- Loading Spinner ---
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-    <div className="w-16 h-16 border-4 border-t-transparent border-orange-500 rounded-full animate-spin" />
+  <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-4">
+    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin"></div>
+    <p className="text-white text-lg">Loading Problem...</p>
   </div>
 );
 
@@ -20,46 +23,52 @@ function ProblemPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
 
+  // --- Data State ---
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- Pane State ---
-  const [leftPaneWidth, setLeftPaneWidth] = useState(45);
-  const [editorPaneHeight, setEditorPaneHeight] = useState(65);
-  const containerRef = useRef(null);
-  const rightPaneRef = useRef(null);
-  const isResizingHorizontal = useRef(false);
-  const isResizingVertical = useRef(false);
-  const [isDragging, setIsDragging] = useState(false);
-
   // --- UI State ---
-  const [activeLeftTab, setActiveLeftTab] = useState("description");
-  const [activeRightTab, setActiveRightTab] = useState("testcase");
-  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [activeProblemTab, setActiveProblemTab] = useState("description");
+  const [activeConsoleTab, setActiveConsoleTab] = useState("testcase");
+  
+  // --- Editor State ---
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [code, setCode] = useState("");
+
+  // --- Submission State ---
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
   const [pollingInterval, setPollingInterval] = useState(null);
 
-  // --- Fetch Problem ---
+  // --- Layout State ---
+  const [leftPaneWidth, setLeftPaneWidth] = useState(45); // % width of left pane
+  const [descPaneHeight, setDescPaneHeight] = useState(60); // % height of description pane
+
+  // --- Refs ---
+  const containerRef = useRef(null);
+  const leftPaneRef = useRef(null);
+  const isResizingHorizontal = useRef(false);
+  const isResizingVertical = useRef(false);
+
+  // --- 1. Fetch Problem ---
   useEffect(() => {
     const fetchProblem = async () => {
       setLoading(true);
       try {
         const { data } = await axios.get(
           `${serverUrl}/api/problems/getoneproblem/${slug}`,
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
         setProblem(data);
         if (data.starterCode?.length) {
           setSelectedLanguage(data.starterCode[0].language);
           setCode(data.starterCode[0].code);
-        } else setCode("// No starter code found for this problem.");
+        } else {
+          setCode("// No starter code found.");
+        }
       } catch (err) {
         console.error(err);
         setError("Failed to load problem.");
@@ -71,19 +80,17 @@ function ProblemPage() {
     fetchProblem();
   }, [slug]);
 
-  // --- Fetch Submissions when “Submissions” tab active ---
+  // --- 2. Fetch Submissions ---
   useEffect(() => {
     const fetchSubs = async () => {
-      if (activeLeftTab === "submissions") {
+      if (activeProblemTab === "submissions" && problem) {
         setLoadingSubmissions(true);
         try {
           const { data } = await axios.get(
-            `${serverUrl}/api/submissions/problem/${slug}`,
-            {
-              withCredentials: true,
-            }
+            `${serverUrl}/api/submissions/problem/${problem.slug}`,
+            { withCredentials: true }
           );
-          setSubmissions(data);
+          setSubmissions(Array.isArray(data) ? data : []);
         } catch {
           toast.error("Failed to load submissions.");
         } finally {
@@ -92,73 +99,64 @@ function ProblemPage() {
       }
     };
     fetchSubs();
-  }, [activeLeftTab, slug]);
+  }, [activeProblemTab, problem]);
 
-  // --- Resizing Logic ---
+  // --- 3. Resizing Logic ---
   const handleMouseDownHorizontal = useCallback((e) => {
-    if (window.innerWidth < 1024) return;
     e.preventDefault();
     isResizingHorizontal.current = true;
-    setIsDragging(true);
     document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
   }, []);
-
-  const handleMouseMoveHorizontal = useCallback(
-    (e) => {
-      if (!isResizingHorizontal.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
-      setLeftPaneWidth(Math.max(25, Math.min(75, newWidth)));
-    },
-    [containerRef]
-  );
 
   const handleMouseDownVertical = useCallback((e) => {
-    if (window.innerWidth < 1024) return;
     e.preventDefault();
     isResizingVertical.current = true;
-    setIsDragging(true);
     document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
   }, []);
-
-  const handleMouseMoveVertical = useCallback(
-    (e) => {
-      if (!isResizingVertical.current || !rightPaneRef.current) return;
-      const rect = rightPaneRef.current.getBoundingClientRect();
-      const newHeight = ((e.clientY - rect.top) / rect.height) * 100;
-      setEditorPaneHeight(Math.max(20, Math.min(80, newHeight)));
-    },
-    [rightPaneRef]
-  );
 
   const handleMouseUp = useCallback(() => {
     isResizingHorizontal.current = false;
     isResizingVertical.current = false;
-    setIsDragging(false);
     document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    // Horizontal: Left Pane vs Right Pane
+    if (isResizingHorizontal.current && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+      newWidth = Math.max(25, Math.min(75, newWidth));
+      setLeftPaneWidth(newWidth);
+    }
+    // Vertical: Description vs Console (Left Pane)
+    if (isResizingVertical.current && leftPaneRef.current) {
+      const rect = leftPaneRef.current.getBoundingClientRect();
+      let newHeight = ((e.clientY - rect.top) / rect.height) * 100;
+      newHeight = Math.max(20, Math.min(80, newHeight));
+      setDescPaneHeight(newHeight);
+    }
   }, []);
 
   useEffect(() => {
-    document.addEventListener("mousemove", handleMouseMoveHorizontal);
-    document.addEventListener("mousemove", handleMouseMoveVertical);
+    document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
     return () => {
-      document.removeEventListener("mousemove", handleMouseMoveHorizontal);
-      document.removeEventListener("mousemove", handleMouseMoveVertical);
+      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [handleMouseMoveHorizontal, handleMouseMoveVertical, handleMouseUp]);
+  }, [handleMouseMove, handleMouseUp]);
 
-  // --- Editor Events ---
+  // --- 4. Editor Handlers ---
   const handleEditorChange = (val) => setCode(val || "");
-  
   const handleLanguageChange = (e) => {
     const lang = e.target.value;
     setSelectedLanguage(lang);
     const starter = problem.starterCode.find((s) => s.language === lang);
     setCode(starter ? starter.code : `// No starter code for ${lang}`);
   };
-
   const resetCode = () => {
     const starter = problem.starterCode.find(
       (s) => s.language === selectedLanguage
@@ -166,15 +164,10 @@ function ProblemPage() {
     if (starter && window.confirm("Reset your code?")) setCode(starter.code);
   };
 
-  // --- Polling Logic ---
+  // --- 5. Submission Logic ---
   const pollForResult = (submissionId) => {
-    // Clear any existing poll
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    // Set status to Judging in the UI
-    setActiveRightTab("result"); // Switch to the result tab
+    if (pollingInterval) clearInterval(pollingInterval);
+    setActiveConsoleTab("result");
     setSubmissionResult({ status: "Judging" });
     setIsSubmitting(true);
 
@@ -184,230 +177,198 @@ function ProblemPage() {
           `${serverUrl}/api/submissions/status/${submissionId}`,
           { withCredentials: true }
         );
-
-        // Check for a final status
         if (result.status !== "Judging" && result.status !== "Pending") {
           clearInterval(interval);
           setPollingInterval(null);
           setIsSubmitting(false);
           setSubmissionResult(result);
           toast.success(`Submission ${result.status}!`);
-
-          // Auto-refresh the submissions tab list if it's active
-          if (activeLeftTab === "submissions") {
-            // Trigger a refetch
-            setActiveLeftTab(""); // This simple state toggle will re-trigger the submissions useEffect
-            setActiveLeftTab("submissions");
+          if (activeProblemTab === "submissions") {
+            setActiveProblemTab("");
+            setTimeout(() => setActiveProblemTab("submissions"), 50);
           }
         } else {
-          // Still judging...
           setSubmissionResult(result);
         }
       } catch (err) {
-        // Stop polling on error
         clearInterval(interval);
         setPollingInterval(null);
         setIsSubmitting(false);
-        toast.error("Error checking submission status.");
         setSubmissionResult({ status: "Error checking status." });
       }
-    }, 2000); // Poll every 2 seconds
-
+    }, 2000);
     setPollingInterval(interval);
   };
 
-  // --- Submission Logic ---
   const handleSubmit = async () => {
     if (!code.trim()) return toast.warn("Code cannot be empty.");
-
     setIsSubmitting(true);
-    setSubmissionResult(null); // Clear old results
-    setActiveRightTab("result"); // Switch to result tab immediately
+    setSubmissionResult(null);
+    setActiveConsoleTab("result");
 
     try {
-      // 1. Send submission to OUR backend
       const { data: pendingSubmission } = await axios.post(
         `${serverUrl}/api/submissions`,
-        { slug: problem.slug, language: selectedLanguage, code: code },
+        { slug: problem.slug, language: selectedLanguage, code },
         { withCredentials: true }
       );
-
-      // 2. Start polling for the result using OUR submission ID
-      pollForResult(pendingSubmission._id);
+      if (pendingSubmission._id) pollForResult(pendingSubmission._id);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submission failed.");
       setIsSubmitting(false);
+      toast.error("Submission failed.");
     }
   };
+  
+  const handleRun = () => {
+    toast.info("Run feature coming soon!");
+  };
+
+
   if (loading) return <LoadingSpinner />;
-  if (error || !problem)
-    return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-[#050505] text-white">
-        <button
-          onClick={() => navigate("/practice")}
-          className="flex items-center gap-2 text-orange-500 hover:text-orange-400 transition-all"
-        >
-          <FaArrowLeft /> Go Back
-        </button>
-        <h1 className="text-3xl font-bold mt-4 text-red-500">
-          {error || "Problem not found"}
-        </h1>
-      </div>
-    );
+  if (error || !problem) return <div className="text-white text-center p-10">Problem not found</div>;
 
-  // --- Neon Pane Base Style ---
-  const paneStyle = `
-    bg-[#0a0a0a] 
-    border border-orange-500/20 
-    rounded-xl 
-    flex flex-col overflow-hidden 
-    transition-all duration-300 
-    shadow-[0_0_10px_rgba(255,100,0,0.1)] 
-    hover:shadow-[0_0_25px_rgba(255,120,0,0.4)]
-    hover:border-orange-400/70
-  `;
-
-  const iconButtonStyle = `p-2 rounded-full bg-black/40 border border-gray-700/50 text-orange-500 transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-black shadow-sm hover:text-orange-400 hover:border-orange-600/60 hover:bg-orange-900/20 hover:shadow-[0_0_15px_rgba(255,100,0,0.3)] hover:scale-110 hover:-translate-y-0.5 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:bg-black/40 disabled:hover:scale-100 disabled:hover:translate-y-0`;
+  // --- Styles ---
+  const actionBtnStyle = "flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-sm transition-all transform active:scale-95";
+  const runBtnStyle = `${actionBtnStyle} bg-gray-900 text-gray-300 border border-gray-700 hover:border-orange-500/50 hover:text-white hover:bg-gray-800 hover:shadow-[0_0_15px_rgba(255,165,0,0.1)]`;
+  const submitBtnStyle = `${actionBtnStyle} bg-gradient-to-r from-orange-600 to-red-600 text-white border border-orange-500/50 shadow-[0_0_20px_rgba(255,69,0,0.4)] hover:shadow-[0_0_30px_rgba(255,69,0,0.6)] hover:scale-105`;
 
   return (
     <div
-      className="flex flex-col h-screen bg-[#050505] text-gray-300"
       ref={containerRef}
+      className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden godfather-bg"
     >
-      {/* Top Navbar */}
-      <header className="h-14 border-b border-orange-500/20 bg-[#0c0c0c]/90 backdrop-blur-sm flex justify-between items-center px-4 sm:px-6">
-        <div className="flex items-center gap-3">
+
+      {/* ======================= TOP NAVBAR ======================= */}
+<header className="flex-shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
+        
+        {/* LEFT: Back Button & Title */}
+        <div className="flex items-center gap-5 min-w-0 overflow-hidden">
           <button
             onClick={() => navigate("/practice")}
-            className="flex items-center gap-2 text-orange-500 font-bold text-xs sm:text-sm 
-             bg-black/80 backdrop-blur-md 
-             border border-orange-600/40 
-             shadow-[0_0_20px_rgba(255,69,0,0.25)] 
-             rounded-full py-1.5 px-3 sm:py-2 sm:px-4 
-             transition-all duration-300 transform 
-             hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] 
-             hover:text-orange-400 hover:scale-105"
+            className="group flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider 
+                       bg-black/50 border border-gray-800 rounded-full py-2 px-4 
+                       transition-all duration-300 
+                       hover:border-orange-600/80 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(255,69,0,0.2)]"
           >
-            <FaArrowLeft />
-            <span className="hidden sm:inline">Problems</span>
+            <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+            <span>Arena</span>
           </button>
-          <h1 className="text-lg sm:text-xl font-semibold font-black text-white [text-shadow:0_0_15px_rgba(255,255,255,0.4),0_0_30px_rgba(255,69,0,0.7)]">
-            {problem.title}
-          </h1>
-          {problem.isPremium && <IoIosLock className="text-yellow-400" />}
+          
+          <div className="flex items-center gap-3 overflow-hidden">
+            <h1 className="text-xl font-black text-white whitespace-nowrap truncate 
+                           [text-shadow:0_0_15px_rgba(255,69,0,0.3)] tracking-tight">
+              {problem.title}
+            </h1>
+            {problem.isPremium && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 p-1.5 rounded-md shadow-[0_0_10px_rgba(255,215,0,0.2)]">
+                <IoIosLock className="text-yellow-400 text-sm" />
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-orange-500 ">
-          <button
-            // onClick={}
-            title="Timer (Soon)"
-            className={iconButtonStyle}
-          >
-            <FaClock size={14} />
+
+        {/* CENTER: ACTION BUTTONS */}
+        <div className="flex items-center gap-4 mx-4">
+          <button onClick={handleRun} disabled={isSubmitting} className={runBtnStyle}>
+            <FaPlay size={10} /> <span className="uppercase">Run</span>
           </button>
-          <button
-            // onClick={}
-            title="Community (Soon)"
-            className={iconButtonStyle}
-          >
-            <FaUsers size={14} />
+          <button onClick={handleSubmit} disabled={isSubmitting} className={submitBtnStyle}>
+            <FaPaperPlane size={12} /> <span className="uppercase">{isSubmitting ? "Judging..." : "Submit"}</span>
           </button>
-          <button
-            // onClick={}
-            title="Chat With Bhoomi AI (Soon)"
-            className={iconButtonStyle}
+        </div>
+
+        {/* RIGHT: TOOLS */}
+        <div className="flex items-center gap-3">
+          <button 
+            title="Ask AI (Soon)" 
+            className="p-2.5 rounded-lg bg-gray-900/50 border border-transparent text-gray-400 
+                       hover:border-orange-500/30 hover:text-orange-400 hover:bg-orange-900/10 
+                       hover:shadow-[0_0_15px_rgba(255,69,0,0.15)] transition-all duration-300"
           >
-            <FaRobot size={14} />
+            <FaRobot size={18} />
           </button>
-          <button
-            // onClick={}
-            title="Settings (Soon)"
-            className={iconButtonStyle}
+          <button 
+            title="Settings (Soon)" 
+            className="p-2.5 rounded-lg bg-gray-900/50 border border-transparent text-gray-400 
+                       hover:border-orange-500/30 hover:text-orange-400 hover:bg-orange-900/10 
+                       hover:shadow-[0_0_15px_rgba(255,69,0,0.15)] transition-all duration-300"
           >
-            <FaCog size={14} />
+            <FaCog size={18} />
           </button>
         </div>
       </header>
 
-      {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden gap-2 p-2">
-        {/* Left: Problem Description */}
+      {/* ======================= MAIN LAYOUT ======================= */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        
+        {/* --- LEFT PANE (Description + Console) --- */}
         <div
-          className={`${paneStyle} w-full`}
-          style={
-            window.innerWidth >= 1024 ? { width: `${leftPaneWidth}%` } : {}
-          }
+          ref={leftPaneRef}
+          className="flex flex-col h-full border-r border-orange-900/40"
+          style={{ width: `${leftPaneWidth}%` }}
         >
-          <ProblemDescription
-            problem={problem}
-            slug={slug}
-            activeLeftTab={activeLeftTab}
-            setActiveLeftTab={setActiveLeftTab}
-            submissions={submissions}
-            loadingSubmissions={loadingSubmissions}
-          />
-        </div>
-
-        {/* Resize Divider */}
-        <div
-          onMouseDown={handleMouseDownHorizontal}
-          className={`hidden lg:block w-[2px] bg-orange-500/20 hover:bg-orange-400 cursor-col-resize transition-all ${
-            isDragging ? "shadow-[0_0_15px_rgba(255,120,0,0.5)]" : ""
-          }`}
-        />
-
-        {/* Right: Editor + Console */}
-        <div
-          ref={rightPaneRef}
-          className={`${paneStyle} flex-grow w-full`}
-          style={
-            window.innerWidth >= 1024
-              ? { width: `${100 - leftPaneWidth}%` }
-              : {}
-          }
-        >
-          {/* Code Editor */}
+          {/* Top: Description */}
           <div
-            className="flex flex-col overflow-hidden"
-            style={{
-              height: window.innerWidth < 1024 ? "65%" : `${editorPaneHeight}%`,
-            }}
+            className="flex flex-col overflow-hidden border-b border-orange-900/40"
+            style={{ height: `${descPaneHeight}%` }}
           >
-            <CodeEditorPane
+            <ProblemDescription
               problem={problem}
-              selectedLanguage={selectedLanguage}
-              code={code}
-              handleLanguageChange={handleLanguageChange}
-              resetCode={resetCode}
-              handleEditorChange={handleEditorChange}
+              slug={problem.slug}
+              activeLeftTab={activeProblemTab}
+              setActiveLeftTab={setActiveProblemTab}
+              submissions={submissions}
+              loadingSubmissions={loadingSubmissions}
+              setSubmissions={setSubmissions}
+              setLoadingSubmissions={setLoadingSubmissions}
+              isContestMode={false}
             />
           </div>
 
-          {/* Divider */}
+          {/* Vertical Resizer */}
           <div
             onMouseDown={handleMouseDownVertical}
-            className="hidden lg:block h-[2px] bg-orange-500/20 hover:bg-orange-400 cursor-row-resize transition-all"
+            className="w-full h-1.5 bg-gradient-to-r from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10"
+            title="Drag to resize"
           />
 
-          {/* Console */}
-          <div
-            className="flex flex-col flex-grow overflow-hidden"
-            style={{
-              height:
-                window.innerWidth >= 1024
-                  ? `${100 - editorPaneHeight}%`
-                  : "35%",
-            }}
-          >
+          {/* Bottom: Console */}
+          <div className="flex-1 min-h-0 overflow-hidden bg-black">
             <ConsolePane
               problemTestCases={problem.testCases}
               submissionResult={submissionResult}
               isSubmitting={isSubmitting}
-              handleSubmit={handleSubmit}
-              activeRightTab={activeRightTab}
-              setActiveRightTab={setActiveRightTab}
+              // Handlers passed but buttons are hidden/ignored in ConsolePane via logic below
+              handleSubmit={() => {}} 
+              handleRun={() => {}}
+              activeRightTab={activeConsoleTab}
+              setActiveRightTab={setActiveConsoleTab}
             />
           </div>
         </div>
+
+        {/* --- HORIZONTAL RESIZER --- */}
+        <div
+          onMouseDown={handleMouseDownHorizontal}
+          className="w-1.5 h-full bg-gradient-to-b from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-col-resize transition-colors z-10"
+          title="Drag to resize"
+        />
+
+        {/* --- RIGHT PANE (Full Height Editor) --- */}
+        <div
+          className="flex flex-col h-full overflow-hidden"
+          style={{ width: `calc(${100 - leftPaneWidth}% - 6px)` }}
+        >
+          <CodeEditorPane
+            problem={problem}
+            selectedLanguage={selectedLanguage}
+            code={code}
+            handleLanguageChange={handleLanguageChange}
+            handleEditorChange={handleEditorChange}
+            resetCode={resetCode}
+          />
+        </div>
+
       </div>
     </div>
   );

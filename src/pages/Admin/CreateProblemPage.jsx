@@ -135,7 +135,7 @@ const GodfatherSelect = ({
       required={required}
       disabled={disabled}
       className="w-full p-2.5 bg-black text-white rounded-md 
-                      border border-orange-700/60
+                      border border-orange-700/60 
                       focus:outline-none focus:border-orange-600/80 
                       focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] 
                       transition-all duration-300 text-sm"
@@ -153,6 +153,7 @@ function CreateProblemPage() {
     difficulty: "Easy",
     isPremium: false,
     starterCode: [{ language: "javascript", code: "" }],
+    driverCode: [{ language: "javascript", code: "" }], // Initialize driverCode
     testCasesData: [{ input: "", expectedOutput: "", isSample: true }],
     solution: "",
     isPublished: true,
@@ -264,6 +265,23 @@ function CreateProblemPage() {
       ...prev,
       starterCode: prev.starterCode.filter((_, i) => i !== index),
     }));
+    
+  // Driver code handlers
+  const handleDriverCodeChange = (index, field, value) => {
+    const dc = [...formData.driverCode];
+    dc[index][field] = value;
+    setFormData((prev) => ({ ...prev, driverCode: dc }));
+  };
+  const addDriverCode = () =>
+    setFormData((prev) => ({
+      ...prev,
+      driverCode: [...prev.driverCode, { language: "", code: "" }],
+    }));
+  const removeDriverCode = (index) =>
+    setFormData((prev) => ({
+      ...prev,
+      driverCode: prev.driverCode.filter((_, i) => i !== index),
+    }));
 
   // Test case handlers
   const handleTestCaseChange = (index, field, value, type = "text") => {
@@ -369,6 +387,11 @@ function twoSum(nums, target) {
       language: (s.language || "").trim(),
       code: (s.code || "").replace(/\r\n/g, "\n"),
     }));
+    // driverCode keep as-is but trim code newline endings
+    normalized.driverCode = (normalized.driverCode || []).map((s) => ({
+      language: (s.language || "").trim(),
+      code: (s.code || "").replace(/\r\n/g, "\n"),
+    }));
     return normalized;
   };
 
@@ -460,10 +483,10 @@ function twoSum(nums, target) {
                      transition-all duration-300 
                      hover:shadow-[0_0_35px_rgba(255,69,0,0.3)] hover:border-orange-600/80 mb-6`;
   const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2.5 px-6 text-base 
-                               shadow-[0_0_15px_rgba(255,69,0,0.4)] 
-                               transition-all duration-300 transform 
-                               hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 
-                               disabled:opacity-50 disabled:cursor-not-allowed`;
+                              shadow-[0_0_15px_rgba(255,69,0,0.4)] 
+                              transition-all duration-300 transform 
+                              hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 
+                              disabled:opacity-50 disabled:cursor-not-allowed`;
   const buttonSecondaryStyle = `bg-transparent border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-1.5 px-3 text-xs shadow-[0_0_10px_rgba(255,69,0,0.2)] transition-all duration-300 transform hover:bg-orange-950/30 hover:border-orange-600/80 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(255,69,0,0.3)] hover:scale-105`;
   const buttonDangerStyle = `bg-red-900/30 text-red-400 border border-red-600/60 shadow-[0_0_8px_rgba(255,0,0,0.3)] hover:bg-red-800/50 hover:text-red-300 focus:ring-red-500 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-offset-black`;
   const headingStyle = `text-2xl font-bold text-orange-400 mb-4 [text-shadow:0_0_10px_rgba(255,69,0,0.6)]`;
@@ -622,7 +645,7 @@ Use Markdown code fences for multi-line example blocks.`}
                 ) : (
                   <div className="mt-3 p-3 bg-gray-900/50 border border-orange-700/30 rounded">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      (formData.description)
+                      {formData.description}
                     </ReactMarkdown>
                   </div>
                 )}
@@ -725,7 +748,7 @@ Use Markdown code fences for multi-line example blocks.`}
                 ) : (
                   <div className="mt-2 p-3 bg-gray-900/50 border border-orange-700/30 rounded">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      (formData.solution)
+                      {formData.solution}
                     </ReactMarkdown>
                   </div>
                 )}
@@ -804,6 +827,80 @@ Use Markdown code fences for multi-line example blocks.`}
                   className={`${buttonSecondaryStyle} !py-1 !px-3`}
                 >
                   <FaPlus className="inline mr-1" /> Add Language
+                </button>
+              </div>
+            </div>
+
+            {/* Driver Code (NEW SECTION) */}
+            <div className={cardStyle}>
+              <h2 className={headingStyle}>Driver Code (Hidden)</h2>
+              <p className="text-xs text-gray-400 mb-3">
+                Add the hidden "Main" function for each language. This code should read from stdin, call the user's function, and print to stdout.
+              </p>
+              {formData.driverCode && formData.driverCode.map((dc, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-3 bg-gray-950/40 border border-gray-700/50 rounded-lg flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+                >
+                  <div className="flex-shrink-0 w-full sm:w-40">
+                    <label
+                      htmlFor={`driverLang-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Language
+                    </label>
+                    <input
+                      type="text"
+                      id={`driverLang-${index}`}
+                      placeholder="e.g., javascript"
+                      value={dc.language}
+                      onChange={(e) =>
+                        handleDriverCodeChange(
+                          index,
+                          "language",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs`}
+                      required
+                    />
+                  </div>
+                  <div className="flex-grow w-full">
+                    <label
+                      htmlFor={`driverCode-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Driver Code
+                    </label>
+                    <textarea
+                      id={`driverCode-${index}`}
+                      value={dc.code}
+                      onChange={(e) =>
+                        handleDriverCodeChange(index, "code", e.target.value)
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs font-mono min-h-[100px] resize-y`}
+                      rows="5"
+                      required
+                      placeholder="// Read input, call user function, print output"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDriverCode(index)}
+                    className={`${buttonDangerStyle} shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0`}
+                    title="Remove Driver Code"
+                  >
+                    <FaTrashAlt />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addDriverCode}
+                  className={`${buttonSecondaryStyle} !py-1 !px-3`}
+                >
+                  <FaPlus className="inline mr-1" /> Add Driver Code
                 </button>
               </div>
             </div>

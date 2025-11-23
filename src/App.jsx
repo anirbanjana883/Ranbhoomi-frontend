@@ -29,6 +29,8 @@ import EditContestPage from './pages/Admin/EditContestPage';
 import ContestRankingPage from './pages/contestPages/ContestRankingPage';
 import InterviewLobby from './pages/interviewPages/InterviewLobby';
 import InterviewRoom from './pages/interviewPages/InterviewRoom';
+import RoadmapListPage from './pages/roadmapPages/RoadmapListPage';
+import RoadmapDetailsPage from './pages/roadmapPages/RoadmapDetailsPage';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -93,6 +95,10 @@ function App() {
         <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
         <Route path='/interview/room/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
         
+
+        {/* roadmaps */}
+        <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />
+        <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> {/* <-- 2. Add this */}
         
       </Routes>
     </>

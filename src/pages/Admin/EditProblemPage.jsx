@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, Fragment } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { serverUrl } from "../../App.jsx";
+import { serverUrl } from "../../App"; // Fixed import path
 import {
   FaArrowLeft,
   FaPlus,
@@ -13,7 +13,6 @@ import {
 } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-// import DOMPurify from "dompurify";
 import rehypeRaw from "rehype-raw";
 
 // --- Loading Spinner ---
@@ -151,6 +150,7 @@ function EditProblemPage() {
     isPublished: true,
     originContest: "",
     starterCode: [{ language: "javascript", code: "" }],
+    driverCode: [{ language: "javascript", code: "" }], // Initialize driverCode
     solution: "",
   });
 
@@ -227,6 +227,11 @@ function EditProblemPage() {
               fetchedProblem.starterCode?.length > 0
                 ? fetchedProblem.starterCode
                 : [{ language: "javascript", code: "" }],
+            // Populate driverCode
+            driverCode:
+              fetchedProblem.driverCode?.length > 0
+                ? fetchedProblem.driverCode
+                : [{ language: "javascript", code: "" }],
             solution: fetchedProblem.solution || "",
           });
           setTagInput((fetchedProblem.tags || []).join(", "));
@@ -286,6 +291,8 @@ function EditProblemPage() {
 
   const handleTagInputChange = (e) => setTagInput(e.target.value);
   const handleCompanyTagInputChange = (e) => setCompanyTagInput(e.target.value);
+  
+  // Starter code handlers
   const handleStarterCodeChange = (index, field, value) => {
     const sc = [...formData.starterCode];
     sc[index][field] = value;
@@ -303,6 +310,24 @@ function EditProblemPage() {
         starterCode: prev.starterCode.filter((_, i) => i !== index),
       }));
   };
+
+  // Driver code handlers
+  const handleDriverCodeChange = (index, field, value) => {
+    const dc = [...formData.driverCode];
+    dc[index][field] = value;
+    setFormData((prev) => ({ ...prev, driverCode: dc }));
+  };
+  const addDriverCode = () =>
+    setFormData((prev) => ({
+      ...prev,
+      driverCode: [...prev.driverCode, { language: "", code: "" }],
+    }));
+  const removeDriverCode = (index) =>
+    setFormData((prev) => ({
+      ...prev,
+      driverCode: prev.driverCode.filter((_, i) => i !== index),
+    }));
+
   const handleNewTestCaseChange = (e) => {
     const { name, value, type, checked } = e.target;
     setNewTestCase((prev) => ({
@@ -360,7 +385,13 @@ function EditProblemPage() {
     normalized.solution = (normalized.solution || "")
       .replace(/\r\n/g, "\n")
       .trim();
+    // starterCode keep as-is but trim code newline endings
     normalized.starterCode = (normalized.starterCode || []).map((s) => ({
+      language: (s.language || "").trim(),
+      code: (s.code || "").replace(/\r\n/g, "\n"),
+    }));
+    // driverCode normalization
+    normalized.driverCode = (normalized.driverCode || []).map((s) => ({
       language: (s.language || "").trim(),
       code: (s.code || "").replace(/\r\n/g, "\n"),
     }));
@@ -371,7 +402,9 @@ function EditProblemPage() {
     if (!data.title || !data.title.trim()) return "Title is required.";
     if (!data.description || !data.description.trim())
       return "Description is required.";
-    if (testCases.length === 0) return "At least one test case must be saved.";
+    // if (testCases.length === 0) return "At least one test case must be saved.";
+    
+    // Starter code validation
     if (!Array.isArray(data.starterCode) || data.starterCode.length === 0)
       return "Provide at least one starter code snippet.";
     for (let i = 0; i < data.starterCode.length; i++) {
@@ -427,7 +460,8 @@ function EditProblemPage() {
         });
       } else {
         // No slug change, just reload data to be safe
-        fetchData();
+        // In a real app, we might just update state instead of refetching
+        window.location.reload();
       }
     } catch (err) {
       console.error("Update Problem Error:", err.response || err);
@@ -473,7 +507,6 @@ function EditProblemPage() {
               Edit Problem
             </h1>
             <div className="flex items-center gap-2">
-              {/* No "Load Example" on Edit page */}
               <button
                 onClick={handleSaveDraft}
                 type="button"
@@ -576,7 +609,6 @@ function EditProblemPage() {
                     label="Problem Tags (comma-separated)"
                     value={tagInput}
                     onChange={handleTagInputChange}
-                    placeholder="e.g., array, hash-table, dp"
                   />
                   {!loadingDropdowns && availableTags.length > 0 && (
                     <p className="text-xs text-gray-500 -mt-3">
@@ -591,7 +623,6 @@ function EditProblemPage() {
                     label="Company Tags (comma-separated)"
                     value={companyTagInput}
                     onChange={handleCompanyTagInputChange}
-                    placeholder="e.g., google, amazon"
                   />
                   {!loadingDropdowns && availableCompanies.length > 0 && (
                     <p className="text-xs text-gray-500 -mt-3">
@@ -619,26 +650,24 @@ function EditProblemPage() {
                   </label>
                 </div>
 
-                {/* Show toggle unless it's locked by a contest */}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="isPublished"
-                    name="isPublished"
-                    checked={formData.isPublished}
-                    onChange={handleInputChange}
-                    disabled={!!formData.originContest} // Disable if linked to a contest
-                    className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <label
-                    htmlFor="isPublished"
-                    className={`text-sm font-medium text-gray-300 select-none ${
-                      !!formData.originContest ? "text-gray-500" : ""
-                    }`}
-                  >
-                    Published (Visible on Practice)
-                  </label>
-                </div>
+                {!formData.originContest && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isPublished"
+                      name="isPublished"
+                      checked={formData.isPublished}
+                      onChange={handleInputChange}
+                      className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 mr-2"
+                    />
+                    <label
+                      htmlFor="isPublished"
+                      className="text-sm font-medium text-gray-300 select-none"
+                    >
+                      Publish Immediately
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 pt-4 border-t border-orange-800/30">
@@ -654,6 +683,7 @@ function EditProblemPage() {
                     <FaEye /> {showSolutionPreview ? "Edit" : "Preview"}
                   </button>
                 </div>
+
                 {!showSolutionPreview ? (
                   <GodfatherTextarea
                     id="solution"
@@ -678,14 +708,274 @@ function EditProblemPage() {
 
             {/* Starter Code */}
             <div className={cardStyle}>
-              {/* ... (Starter Code UI - same as CreateProblemPage) ... */}
+              <h2 className={headingStyle}>Starter Code</h2>
+              <p className="text-xs text-gray-400 mb-3">
+                Provide starter template(s) per language. The first one will be
+                default.
+              </p>
+              {formData.starterCode.map((sc, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-3 bg-gray-950/40 border border-gray-700/50 rounded-lg flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+                >
+                  <div className="flex-shrink-0 w-full sm:w-40">
+                    <label
+                      htmlFor={`starterLang-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Language
+                    </label>
+                    <input
+                      type="text"
+                      id={`starterLang-${index}`}
+                      placeholder="e.g., javascript"
+                      value={sc.language}
+                      onChange={(e) =>
+                        handleStarterCodeChange(
+                          index,
+                          "language",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs`}
+                      required
+                    />
+                  </div>
+                  <div className="flex-grow w-full">
+                    <label
+                      htmlFor={`starterCode-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Code
+                    </label>
+                    <textarea
+                      id={`starterCode-${index}`}
+                      value={sc.code}
+                      onChange={(e) =>
+                        handleStarterCodeChange(index, "code", e.target.value)
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs font-mono min-h-[100px] resize-y`}
+                      rows="5"
+                      required
+                    />
+                  </div>
+                  {formData.starterCode.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeStarterCode(index)}
+                      className={`${buttonDangerStyle} shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0`}
+                      title="Remove Code Snippet"
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addStarterCode}
+                  className={`${buttonSecondaryStyle} !py-1 !px-3`}
+                >
+                  <FaPlus className="inline mr-1" /> Add Language
+                </button>
+              </div>
+            </div>
+
+             {/* Driver Code (NEW SECTION) */}
+             <div className={cardStyle}>
+              <h2 className={headingStyle}>Driver Code (Hidden)</h2>
+              <p className="text-xs text-gray-400 mb-3">
+                Add the hidden "Main" function for each language. This code should read from stdin, call the user's function, and print to stdout.
+              </p>
+              {formData.driverCode && formData.driverCode.map((dc, index) => (
+                <div
+                  key={index}
+                  className="mb-4 p-3 bg-gray-950/40 border border-gray-700/50 rounded-lg flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+                >
+                  <div className="flex-shrink-0 w-full sm:w-40">
+                    <label
+                      htmlFor={`driverLang-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Language
+                    </label>
+                    <input
+                      type="text"
+                      id={`driverLang-${index}`}
+                      placeholder="e.g., javascript"
+                      value={dc.language}
+                      onChange={(e) =>
+                        handleDriverCodeChange(
+                          index,
+                          "language",
+                          e.target.value
+                        )
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs`}
+                      required
+                    />
+                  </div>
+                  <div className="flex-grow w-full">
+                    <label
+                      htmlFor={`driverCode-${index}`}
+                      className={`${labelStyle} !text-xs`}
+                    >
+                      Driver Code
+                    </label>
+                    <textarea
+                      id={`driverCode-${index}`}
+                      value={dc.code}
+                      onChange={(e) =>
+                        handleDriverCodeChange(index, "code", e.target.value)
+                      }
+                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs font-mono min-h-[100px] resize-y`}
+                      rows="5"
+                      required
+                      placeholder="// Read input, call user function, print output"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDriverCode(index)}
+                    className={`${buttonDangerStyle} shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0`}
+                    title="Remove Driver Code"
+                  >
+                    <FaTrashAlt />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addDriverCode}
+                  className={`${buttonSecondaryStyle} !py-1 !px-3`}
+                >
+                  <FaPlus className="inline mr-1" /> Add Driver Code
+                </button>
+              </div>
+            </div>
+
+            {/* Test Cases */}
+            <div className={`${cardStyle} p-6 mt-8`}>
+              <h2 className={headingStyle}>
+                {" "}
+                Manage Test Cases ({testCases.length}){" "}
+              </h2>
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2 mb-6 border-b border-orange-800/30 pb-4">
+                {testCases.map((tc, index) => (
+                  <div
+                    key={tc._id}
+                    className="p-3 bg-gray-950/50 border border-gray-700/60 rounded-lg flex justify-between items-start gap-4"
+                  >
+                    <div className="flex-grow text-xs space-y-1 overflow-hidden">
+                      <p className="font-semibold text-gray-400">
+                        {" "}
+                        TC #{index + 1}{" "}
+                        {tc.isSample && (
+                          <span className="text-yellow-400 font-bold">
+                            (Sample)
+                          </span>
+                        )}
+                      </p>
+                      <p>
+                        <strong className="text-gray-500">Input:</strong>{" "}
+                        <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
+                          {tc.input}
+                        </code>
+                      </p>
+                      <p>
+                        <strong className="text-gray-500">Output:</strong>{" "}
+                        <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
+                          {tc.expectedOutput}
+                        </code>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTestCase(tc._id)}
+                      disabled={saving}
+                      className={`${buttonDangerStyle} shrink-0`}
+                      title="Delete Test Case"
+                    >
+                      {" "}
+                      <FaTrashAlt />{" "}
+                    </button>
+                  </div>
+                ))}
+                {!loading && testCases.length === 0 && (
+                  <p className="text-gray-500 text-center italic">
+                    {" "}
+                    No test cases added yet.{" "}
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-gray-950/30 p-4 rounded-lg border border-gray-700/40">
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  {" "}
+                  Add New Test Case{" "}
+                </h3>
+                <GodfatherTextarea
+                  id="new-input"
+                  name="input"
+                  label="Input"
+                  value={newTestCase.input}
+                  onChange={handleNewTestCaseChange}
+                  rows={3}
+                  // required
+                />
+                <GodfatherTextarea
+                  id="new-output"
+                  name="expectedOutput"
+                  label="Expected Output"
+                  value={newTestCase.expectedOutput}
+                  onChange={handleNewTestCaseChange}
+                  rows={3}
+                  // required
+                />
+                <div className="mb-4 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="new-isSample"
+                    name="isSample"
+                    checked={newTestCase.isSample}
+                    onChange={handleNewTestCaseChange}
+                    className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 focus:ring-offset-0 focus:ring-offset-black"
+                  />
+                  <label
+                    htmlFor="new-isSample"
+                    className="text-sm font-medium text-gray-300 select-none"
+                  >
+                    {" "}
+                    Mark as Sample (Visible to User){" "}
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddTestCase}
+                  disabled={saving}
+                  className={`${buttonSecondaryStyle} !w-auto`}
+                >
+                  {" "}
+                  {saving ? (
+                    "Adding..."
+                  ) : (
+                    <>
+                      <FaPlus className="inline mr-1" /> Add Test Case
+                    </>
+                  )}{" "}
+                </button>
+              </div>
             </div>
 
             {/* Submit */}
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 type="submit"
-                disabled={saving || loadingDropdowns}
+                disabled={
+                  saving || loadingDropdowns
+                }
                 className={`${buttonPrimaryStyle} sm:col-span-2`}
               >
                 {saving ? (
@@ -706,117 +996,6 @@ function EditProblemPage() {
               </button>
             </div>
           </form>
-
-          {/* Test Cases */}
-          <div className={`${cardStyle} p-6 mt-8`}>
-            <h2 className={headingStyle}>
-              {" "}
-              Manage Test Cases ({testCases.length}){" "}
-            </h2>
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-2 mb-6 border-b border-orange-800/30 pb-4">
-              {testCases.map((tc, index) => (
-                <div
-                  key={tc._id}
-                  className="p-3 bg-gray-950/50 border border-gray-700/60 rounded-lg flex justify-between items-start gap-4"
-                >
-                  <div className="flex-grow text-xs space-y-1 overflow-hidden">
-                    <p className="font-semibold text-gray-400">
-                      {" "}
-                      TC #{index + 1}{" "}
-                      {tc.isSample && (
-                        <span className="text-yellow-400 font-bold">
-                          (Sample)
-                        </span>
-                      )}
-                    </p>
-                    <p>
-                      <strong className="text-gray-500">Input:</strong>{" "}
-                      <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
-                        {tc.input}
-                      </code>
-                    </p>
-                    <p>
-                      <strong className="text-gray-500">Output:</strong>{" "}
-                      <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
-                        {tc.expectedOutput}
-                      </code>
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteTestCase(tc._id)}
-                    disabled={saving}
-                    className={`${buttonDangerStyle} shrink-0`}
-                    title="Delete Test Case"
-                  >
-                    {" "}
-                    <FaTrashAlt />{" "}
-                  </button>
-                </div>
-              ))}
-              {!loading && testCases.length === 0 && (
-                <p className="text-gray-500 text-center italic">
-                  {" "}
-                  No test cases added yet.{" "}
-                </p>
-              )}
-            </div>
-
-            <form onSubmit={handleAddTestCase}>
-              <h3 className="text-lg font-semibold text-white mb-3">
-                {" "}
-                Add New Test Case{" "}
-              </h3>
-              <GodfatherTextarea
-                id="new-input"
-                name="input"
-                label="Input"
-                value={newTestCase.input}
-                onChange={handleNewTestCaseChange}
-                rows={3}
-                required
-              />
-              <GodfatherTextarea
-                id="new-output"
-                name="expectedOutput"
-                label="Expected Output"
-                value={newTestCase.expectedOutput}
-                onChange={handleNewTestCaseChange}
-                rows={3}
-                required
-              />
-              <div className="mb-4 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="new-isSample"
-                  name="isSample"
-                  checked={newTestCase.isSample}
-                  onChange={handleNewTestCaseChange}
-                  className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 focus:ring-offset-0 focus:ring-offset-black"
-                />
-                <label
-                  htmlFor="new-isSample"
-                  className="text-sm font-medium text-gray-300 select-none"
-                >
-                  {" "}
-                  Mark as Sample (Visible to User){" "}
-                </label>
-              </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className={`${buttonSecondaryStyle} !w-auto`}
-              >
-                {" "}
-                {saving ? (
-                  "Adding..."
-                ) : (
-                  <>
-                    <FaPlus className="inline mr-1" /> Add Test Case
-                  </>
-                )}{" "}
-              </button>
-            </form>
-          </div>
         </div>
       </div>
     </>

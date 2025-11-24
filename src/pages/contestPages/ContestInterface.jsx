@@ -20,7 +20,7 @@ import {
 import { IoIosLock } from "react-icons/io";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import Editor from "@monaco-editor/react";
+// import Editor from "@monaco-editor/react";
 import rehypeRaw from "rehype-raw";
 
 // --- Import Child Components ---

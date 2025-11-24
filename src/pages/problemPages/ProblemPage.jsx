@@ -3,13 +3,20 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { serverUrl } from "../../App";
-import { FaArrowLeft, FaPlay, FaPaperPlane, FaRobot, FaCog } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaPlay,
+  FaPaperPlane,
+  FaRobot,
+  FaCog,
+} from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 
 // Import your components
 import ProblemDescription from "../../component/ProblemPageComponent/ProblemDescription";
 import CodeEditorPane from "../../component/ProblemPageComponent/CodeEditorPane";
 import ConsolePane from "../../component/ProblemPageComponent/ConsolePane";
+import AIChatPanel from "../../component/ProblemPageComponent/AIChatPanel";
 
 // --- Loading Spinner ---
 const LoadingSpinner = () => (
@@ -31,7 +38,7 @@ function ProblemPage() {
   // --- UI State ---
   const [activeProblemTab, setActiveProblemTab] = useState("description");
   const [activeConsoleTab, setActiveConsoleTab] = useState("testcase");
-  
+
   // --- Editor State ---
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [code, setCode] = useState("");
@@ -44,8 +51,10 @@ function ProblemPage() {
   const [pollingInterval, setPollingInterval] = useState(null);
 
   // --- Layout State ---
-  const [leftPaneWidth, setLeftPaneWidth] = useState(45); // % width of left pane
-  const [descPaneHeight, setDescPaneHeight] = useState(60); // % height of description pane
+  const [leftPaneWidth, setLeftPaneWidth] = useState(45);
+  const [descPaneHeight, setDescPaneHeight] = useState(60);
+
+  const [showAI, setShowAI] = useState(false);
 
   // --- Refs ---
   const containerRef = useRef(null);
@@ -218,17 +227,18 @@ function ProblemPage() {
       toast.error("Submission failed.");
     }
   };
-  
+
   const handleRun = () => {
     toast.info("Run feature coming soon!");
   };
 
-
   if (loading) return <LoadingSpinner />;
-  if (error || !problem) return <div className="text-white text-center p-10">Problem not found</div>;
+  if (error || !problem)
+    return <div className="text-white text-center p-10">Problem not found</div>;
 
   // --- Styles ---
-  const actionBtnStyle = "flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-sm transition-all transform active:scale-95";
+  const actionBtnStyle =
+    "flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-sm transition-all transform active:scale-95";
   const runBtnStyle = `${actionBtnStyle} bg-gray-900 text-gray-300 border border-gray-700 hover:border-orange-500/50 hover:text-white hover:bg-gray-800 hover:shadow-[0_0_15px_rgba(255,165,0,0.1)]`;
   const submitBtnStyle = `${actionBtnStyle} bg-gradient-to-r from-orange-600 to-red-600 text-white border border-orange-500/50 shadow-[0_0_20px_rgba(255,69,0,0.4)] hover:shadow-[0_0_30px_rgba(255,69,0,0.6)] hover:scale-105`;
 
@@ -237,10 +247,8 @@ function ProblemPage() {
       ref={containerRef}
       className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden godfather-bg"
     >
-
       {/* ======================= TOP NAVBAR ======================= */}
-<header className="flex-shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
-        
+      <header className="flex-shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
         {/* LEFT: Back Button & Title */}
         <div className="flex items-center gap-5 min-w-0 overflow-hidden">
           <button
@@ -253,10 +261,12 @@ function ProblemPage() {
             <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
             <span>Arena</span>
           </button>
-          
+
           <div className="flex items-center gap-3 overflow-hidden">
-            <h1 className="text-xl font-black text-white whitespace-nowrap truncate 
-                           [text-shadow:0_0_15px_rgba(255,69,0,0.3)] tracking-tight">
+            <h1
+              className="text-xl font-black text-white whitespace-nowrap truncate 
+                           [text-shadow:0_0_15px_rgba(255,69,0,0.3)] tracking-tight"
+            >
               {problem.title}
             </h1>
             {problem.isPremium && (
@@ -269,26 +279,40 @@ function ProblemPage() {
 
         {/* CENTER: ACTION BUTTONS */}
         <div className="flex items-center gap-4 mx-4">
-          <button onClick={handleRun} disabled={isSubmitting} className={runBtnStyle}>
+          <button
+            onClick={handleRun}
+            disabled={isSubmitting}
+            className={runBtnStyle}
+          >
             <FaPlay size={10} /> <span className="uppercase">Run</span>
           </button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className={submitBtnStyle}>
-            <FaPaperPlane size={12} /> <span className="uppercase">{isSubmitting ? "Judging..." : "Submit"}</span>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={submitBtnStyle}
+          >
+            <FaPaperPlane size={12} />{" "}
+            <span className="uppercase">
+              {isSubmitting ? "Judging..." : "Submit"}
+            </span>
           </button>
         </div>
 
         {/* RIGHT: TOOLS */}
         <div className="flex items-center gap-3">
-          <button 
-            title="Ask AI (Soon)" 
-            className="p-2.5 rounded-lg bg-gray-900/50 border border-transparent text-gray-400 
-                       hover:border-orange-500/30 hover:text-orange-400 hover:bg-orange-900/10 
-                       hover:shadow-[0_0_15px_rgba(255,69,0,0.15)] transition-all duration-300"
+          <button
+            onClick={() => setShowAI(!showAI)}
+            title="Ask Bhoomi AI"
+            className={`p-2 rounded-full transition ${
+              showAI
+                ? "text-orange-400 bg-gray-800"
+                : "hover:text-orange-400 hover:bg-gray-900"
+            }`}
           >
             <FaRobot size={18} />
           </button>
-          <button 
-            title="Settings (Soon)" 
+          <button
+            title="Settings (Soon)"
             className="p-2.5 rounded-lg bg-gray-900/50 border border-transparent text-gray-400 
                        hover:border-orange-500/30 hover:text-orange-400 hover:bg-orange-900/10 
                        hover:shadow-[0_0_15px_rgba(255,69,0,0.15)] transition-all duration-300"
@@ -300,7 +324,6 @@ function ProblemPage() {
 
       {/* ======================= MAIN LAYOUT ======================= */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        
         {/* --- LEFT PANE (Description + Console) --- */}
         <div
           ref={leftPaneRef}
@@ -339,7 +362,7 @@ function ProblemPage() {
               submissionResult={submissionResult}
               isSubmitting={isSubmitting}
               // Handlers passed but buttons are hidden/ignored in ConsolePane via logic below
-              handleSubmit={() => {}} 
+              handleSubmit={() => {}}
               handleRun={() => {}}
               activeRightTab={activeConsoleTab}
               setActiveRightTab={setActiveConsoleTab}
@@ -368,8 +391,16 @@ function ProblemPage() {
             resetCode={resetCode}
           />
         </div>
-
       </div>
+
+      {/* AI Overlay */}
+      {showAI && (
+        <AIChatPanel
+          onClose={() => setShowAI(false)}
+          problem={problem}
+          userCode={code} // Passes current editor code
+        />
+      )}
     </div>
   );
 }

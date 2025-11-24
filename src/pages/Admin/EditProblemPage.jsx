@@ -182,7 +182,7 @@ function EditProblemPage() {
       try {
         // Fetch in parallel
         const problemPromise = axios.get(
-          `${serverUrl}/api/problems/getoneproblem/${slug}`,
+          `${serverUrl}/api/problems/admin/edit/${slug}`,
           { withCredentials: true }
         );
         const testCasesPromise = axios.get(

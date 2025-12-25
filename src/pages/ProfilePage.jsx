@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   FaGithub,
   FaLinkedin,
@@ -8,42 +8,65 @@ import {
   FaEdit,
   FaCog,
   FaTrophy,
+  FaFire,
+  FaCode,
+  FaTerminal,
+  FaMedal
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import CalendarHeatmap from "react-calendar-heatmap";
+import "react-calendar-heatmap/dist/styles.css";
+import { Tooltip as ReactTooltip } from "react-tooltip";
+
 import { serverUrl } from "../App";
+import ActivityGraph from "../component/ActivityGraph"; 
+import ContestRatingGraph from "../component/ContestRatingGraph";
 
 // --- Loading Spinner ---
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-black">
-    <div
-      className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin
-                 [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"
-    ></div>
+    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"></div>
   </div>
 );
 
+// --- Heatmap Styles ---
+const heatmapCSS = `
+  .react-calendar-heatmap text { font-size: 10px; fill: #666; }
+  .react-calendar-heatmap .color-empty { fill: #1a1a1a; rx: 2px; }
+  .react-calendar-heatmap .color-scale-1 { fill: #431407; rx: 2px; }
+  .react-calendar-heatmap .color-scale-2 { fill: #7c2d12; rx: 2px; }
+  .react-calendar-heatmap .color-scale-3 { fill: #c2410c; rx: 2px; }
+  .react-calendar-heatmap .color-scale-4 { fill: #ea580c; rx: 2px; }
+  .react-calendar-heatmap rect:hover { stroke: #fff; stroke-width: 1px; }
+`;
+
 function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const [profileData, setProfileData] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRequesting, setIsRequesting] = useState(false);
-  const { username } = useParams();
+  
+  const { username } = useParams(); 
   const navigate = useNavigate();
   const { userData: loggedInUser } = useSelector((state) => state.user);
-  const isOwnProfile = loggedInUser && loggedInUser.username === username;
+  
+  const isOwnProfile = !username || (loggedInUser && loggedInUser.username === username);
 
-  // --- Fetch profile data ---
+  // --- Fetch Profile Data ---
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!username) return;
       try {
         setLoading(true);
-        const { data } = await axios.get(
-          `${serverUrl}/api/user/profile/${username}`,
-          { withCredentials: true }
-        );
-        setUser(data);
+        
+        let url = `${serverUrl}/api/user/profile`; 
+        
+        if (username) {
+            url = `${serverUrl}/api/user/profile/${username}`;
+        }
+
+        const { data } = await axios.get(url, { withCredentials: true });
+        setProfileData(data);
         setError(null);
       } catch (err) {
         console.error("Error fetching profile:", err);
@@ -55,9 +78,7 @@ function ProfilePage() {
     fetchUserProfile();
   }, [username]);
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  const handleBack = () => navigate(-1);
 
   // --- Handle Admin Request ---
   const handleRequestAdmin = async () => {
@@ -70,7 +91,10 @@ function ProfilePage() {
         { withCredentials: true }
       );
       toast.success(data.message);
-      setUser((prevUser) => ({ ...prevUser, adminRequestStatus: "pending" }));
+      setProfileData(prev => ({
+          ...prev,
+          user: { ...prev.user, adminRequestStatus: "pending" }
+      }));
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not send request.");
     } finally {
@@ -78,249 +102,284 @@ function ProfilePage() {
     }
   };
 
-  // --- Render States ---
   if (loading) return <LoadingSpinner />;
 
-  if (error) {
+  if (error || !profileData) {
     return (
       <div className="bg-black flex flex-col items-center justify-center min-h-screen text-center p-4">
         <h1 className="text-4xl font-bold text-red-500 animate-pulse [text-shadow:0_0_15px_rgba(255,0,0,0.6)]">
           404 - Not Found
         </h1>
-        <p className="text-xl text-gray-400 mt-4">{error}</p>
-        <Link
-          to="/"
-          className="mt-8 px-6 py-2.5 bg-orange-600 text-white text-base font-bold rounded-lg
-                     shadow-[0_0_15px_rgba(255,69,0,0.5)] hover:shadow-[0_0_25px_rgba(255,69,0,0.7)]
-                     hover:bg-orange-700 transition-all transform hover:scale-105"
-        >
+        <p className="text-xl text-gray-400 mt-4">{error || "Profile unavailable"}</p>
+        <Link to="/" className="mt-8 px-6 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition-all">
           Return to Battlefield
         </Link>
       </div>
     );
   }
 
-  if (!user) return null;
+  const { user, stats } = profileData;
+  // Safety check for heatmap data before sorting
+  const graphData = stats.heatmap ? [...stats.heatmap].sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
 
-  // --- Refined Theme Styles ---
-  const cardStyle = `bg-black border border-orange-700/60 rounded-xl p-6 
-                     transition-all duration-300 
-                     hover:shadow-[0_0_25px_rgba(255,69,0,0.3)] hover:border-orange-600/80`;
-  const headingStyle = `text-xl font-semibold text-white mb-4 [text-shadow:0_0_6px_rgba(255,255,255,0.2)]`;
-  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2 px-4 text-sm 
-                              shadow-[0_0_15px_rgba(255,69,0,0.4)] 
-                              transition-all duration-300 transform 
-                              hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 
-                              disabled:bg-gray-700 disabled:text-gray-500 disabled:shadow-none 
-                              disabled:cursor-not-allowed disabled:scale-100`;
-  const buttonSecondaryStyle = `w-full bg-black border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-2 px-4 text-sm 
-                                shadow-[0_0_10px_rgba(255,69,0,0.15)] 
-                                transition-all duration-300 transform 
-                                hover:bg-orange-950/30 hover:border-orange-600/80 hover:text-orange-400 
-                                hover:shadow-[0_0_20px_rgba(255,69,0,0.3)] hover:scale-105`;
+  // --- Styles ---
+  const cardStyle = `bg-black border border-orange-700/60 rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,69,0,0.2)] hover:border-orange-600/80`;
+  const headingStyle = `text-xl font-semibold text-white mb-4 [text-shadow:0_0_6px_rgba(255,255,255,0.2)] flex items-center gap-2`;
+  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2 px-4 text-sm shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 hover:bg-orange-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`;
+  const buttonSecondaryStyle = `w-full bg-black border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-2 px-4 text-sm shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300 hover:bg-orange-950/30 hover:text-orange-400 hover:scale-105`;
 
   return (
     <>
-      {/* --- Floating Back Button --- */}
-      <button
-        onClick={handleBack}
-        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md 
-                   border border-orange-600/50 shadow-[0_0_20px_rgba(255,69,0,0.2)] 
-                   text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 text-xs sm:text-sm 
-                   transition-all duration-300 transform 
-                   hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] 
-                   hover:text-orange-400 hover:scale-105"
-      >
-        <FaArrowLeft />
-        <span className="hidden sm:inline">Back</span>
+      <style>{heatmapCSS}</style>
+      
+      {/* Floating Back Button */}
+      <button onClick={handleBack} className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-orange-600/50 text-orange-500 font-bold rounded-full py-1.5 px-3 hover:scale-105 transition-all">
+        <FaArrowLeft /> <span className="hidden sm:inline">Back</span>
       </button>
 
-      {/* --- Main Content --- */}
-      <div className="min-h-screen text-gray-300 pt-28 px-4 bg-black pb-20 godfather-bg">
+      <div className="min-h-screen text-gray-300 pt-28 px-4 bg-black pb-20 godfather-bg font-sans">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* ### LEFT COLUMN ### */}
+
+          {/* ### LEFT COLUMN: User Identity & Detailed Stats ### */}
           <div className="lg:col-span-1 space-y-6">
-            {/* --- Profile Card --- */}
-            <div className={`${cardStyle} text-center`}>
+            
+            {/*  Profile Card */}
+            <div className={`${cardStyle} text-center relative overflow-hidden`}>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-600 to-transparent"></div>
+              
               <img
-                src={
-                  user.photoUrl ||
-                  `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username}`
-                }
+                src={user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username}`}
                 alt={user.name}
-                className="w-32 h-32 rounded-full border-4 border-orange-500 object-cover mx-auto 
-                           shadow-[0_0_25px_rgba(255,69,0,0.4)]"
+                className="w-32 h-32 rounded-full border-4 border-orange-500 object-cover mx-auto shadow-[0_0_25px_rgba(255,69,0,0.4)]"
               />
-              <h1 className="text-2xl font-bold text-white mt-4 [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
-                {user.name}
-              </h1>
-              <p className="text-lg text-orange-400 [text-shadow:0_0_12px_rgba(255,69,0,0.5)]">
-                @{user.username}
-              </p>
+              <h1 className="text-2xl font-bold text-white mt-4">{user.name}</h1>
+              <p className="text-lg text-orange-400">@{user.username}</p>
+              
+              {/* Role Badge */}
+              <div className="mt-2 flex justify-center">
+                  {user.role === "admin" ? <span className="px-3 py-0.5 bg-green-900/40 text-green-400 text-xs rounded-full border border-green-700">Admin</span> :
+                   user.role === "master" ? <span className="px-3 py-0.5 bg-yellow-900/40 text-yellow-400 text-xs rounded-full border border-yellow-700">Master</span> :
+                   <span className="px-3 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-600">Warrior</span>
+                  }
+              </div>
+
               {isOwnProfile && (
-                <button
-                  onClick={() => navigate("/editprofile")}
-                  className={`mt-5 ${buttonSecondaryStyle} flex items-center justify-center gap-2`}
-                >
+                <button onClick={() => navigate("/editprofile")} className={`mt-5 ${buttonSecondaryStyle} flex items-center justify-center gap-2`}>
                   <FaEdit /> Edit Profile
                 </button>
               )}
+
               <div className="flex justify-center gap-5 mt-5">
-                {user.github && (
-                  <a
-                    href={user.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-orange-400 transform hover:scale-110 transition-all duration-200"
-                  >
-                    <FaGithub size={24} />
-                  </a>
-                )}
-                {user.linkedin && (
-                  <a
-                    href={user.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-orange-400 transform hover:scale-110 transition-all duration-200"
-                  >
-                    <FaLinkedin size={24} />
-                  </a>
-                )}
+                {user.github && <a href={user.github} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-orange-400 text-2xl"><FaGithub /></a>}
+                {user.linkedin && <a href={user.linkedin} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-orange-400 text-2xl"><FaLinkedin /></a>}
               </div>
             </div>
 
-            {/* --- Stats Card --- */}
+            {/*  Difficulty Breakdown  */}
             <div className={cardStyle}>
-              <h2 className={headingStyle}> Battle Stats </h2>
+              <h2 className={headingStyle}><FaTrophy className="text-orange-500"/> Battle Record</h2>
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Problems Solved</span>
-                  <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
-                    0
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Contests Joined</span>
-                  <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
-                    0
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-400">Current Rating</span>
-                  <span className="text-lg font-bold text-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.4)]">
-                    N/A
-                  </span>
-                </div>
+                 {/* Easy */}
+                 <div>
+                    <div className="flex justify-between text-xs mb-1">
+                        <span className="text-green-400 font-bold">Easy</span>
+                        <span className="text-gray-400">{stats.easy} solved</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.easy / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                 </div>
+                 {/* Medium */}
+                 <div>
+                    <div className="flex justify-between text-xs mb-1">
+                        <span className="text-yellow-400 font-bold">Medium</span>
+                        <span className="text-gray-400">{stats.medium} solved</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.medium / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                 </div>
+                 {/* Hard */}
+                 <div>
+                    <div className="flex justify-between text-xs mb-1">
+                        <span className="text-red-500 font-bold">Hard</span>
+                        <span className="text-gray-400">{stats.hard} solved</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${Math.min((stats.hard / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                 </div>
+                 {/* Super Hard */}
+                 <div>
+                    <div className="flex justify-between text-xs mb-1">
+                        <span className="text-purple-400 font-bold">Super Hard</span>
+                        <span className="text-gray-400">{stats.superHard} solved</span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: `${Math.min((stats.superHard / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
+                    </div>
+                 </div>
+                 
+                 <div className="pt-4 border-t border-gray-800 flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Total Solved</span>
+                    <span className="text-2xl font-black text-white">{stats.totalSolved}</span>
+                 </div>
               </div>
+            </div>
+            
+            {/*  About Me */}
+            <div className={cardStyle}>
+                <h2 className={headingStyle}>About Me</h2>
+                <p className="text-sm text-gray-400 leading-relaxed italic">
+                    "{user.description || "No bio provided. Just here to code."}"
+                </p>
             </div>
           </div>
 
-          {/* ### RIGHT COLUMN ### */}
+
+          {/* ### RIGHT COLUMN: Visualizations & Activity ### */}
           <div className="lg:col-span-2 space-y-6">
-            {/* --- About Me Card --- */}
+            
+            {/*  Heatmap */}
             <div className={cardStyle}>
-              <h2 className={headingStyle}> About Me </h2>
-              <p className="text-gray-300 leading-relaxed text-base">
-                {user.description || "No description provided."}
-              </p>
-            </div>
-
-            {/* --- Submission Activity --- */}
-            <div className={cardStyle}>
-              <h2 className={headingStyle}> Submission Activity </h2>
-              <div className="h-32 flex items-center justify-center bg-black/40 rounded-lg border border-gray-700/50">
-                <p className="text-gray-500 italic">
-                  Submission Heatmap (Coming Soon)
-                </p>
-              </div>
-            </div>
-
-            {/* --- Account Status / Admin Actions Card --- */}
-            {isOwnProfile && (
-              <div className={cardStyle}>
-                <h2 className={headingStyle}> Account Controls </h2>
-                <div className="space-y-4">
-                  {/* Role Display */}
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400">Account Role:</span>
-                    {loggedInUser.role === "admin" && (
-                      <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs font-bold rounded-full shadow-[0_0_10px_rgba(0,255,0,0.3)]">
-                        Admin
-                      </span>
-                    )}
-                    {loggedInUser.role === "master" && (
-                      <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 text-xs font-bold rounded-full shadow-[0_0_10px_rgba(255,215,0,0.4)]">
-                        Master
-                      </span>
-                    )}
-                    {loggedInUser.role === "user" && (
-                      <span className="px-3 py-1 bg-gray-700/50 text-gray-400 text-xs font-bold rounded-full">
-                        User
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Master Dashboard Button */}
-                  {loggedInUser.role === "master" && (
-                    <button
-                      onClick={() => navigate("/admin/dashboard")}
-                      className={`${buttonPrimaryStyle} flex items-center justify-center gap-2`}
-                    >
-                      <FaCog /> Go to Master Dashboard
-                    </button>
-                  )}
-
-                  {/* --- Manage Problems Button --- */}
-                  {(loggedInUser.role === "admin" ||
-                    loggedInUser.role === "master") && (
-                    <button
-                      onClick={() => navigate("/admin/problems")}
-                      className={`${buttonSecondaryStyle} flex items-center justify-center gap-2`}
-                    >
-                      <FaEdit /> Manage Problems
-                    </button>
-                  )}
-                  {/* --- Manage contest Button --- */}
-                  {(loggedInUser.role === "admin" ||
-                    loggedInUser.role === "master") && (
-                    <button
-                      onClick={() => navigate("/admin/contests")}
-                      className={`${buttonSecondaryStyle} flex items-center justify-center gap-2`}
-                    >
-                      <FaTrophy /> Manage Contests
-                    </button>
-                  )}
-
-                  {/* Admin Request Button */}
-                  {loggedInUser.role === "user" && (
-                    <div className="pt-4 border-t border-orange-800/30">
-                      <p className="text-sm text-gray-400 mb-2">
-                        Want to help manage Ranbhoomi? Request admin access.
-                      </p>
-                      <button
-                        onClick={handleRequestAdmin}
-                        disabled={
-                          isRequesting || user.adminRequestStatus === "pending"
-                        }
-                        className={`${buttonPrimaryStyle} !text-xs !py-1.5`}
-                      >
-                        {isRequesting
-                          ? "Sending..."
-                          : user.adminRequestStatus === "pending"
-                          ? "Request Pending"
-                          : "Request Admin Access"}
-                      </button>
+                <h2 className={headingStyle}><FaFire className="text-orange-500"/> Consistency</h2>
+                <div className="w-full overflow-x-auto pb-2">
+                    <div className="min-w-[600px]">
+                        <CalendarHeatmap
+                            startDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
+                            endDate={new Date()}
+                            values={stats.heatmap || []} 
+                            classForValue={(value) => {
+                                if (!value) return "color-empty";
+                                return `color-scale-${Math.min(value.count, 4)}`;
+                            }}
+                            tooltipDataAttrs={(value) => ({
+                                "data-tooltip-id": "heatmap-tooltip",
+                                "data-tooltip-content": value.date ? `${value.date}: ${value.count} submissions` : "No activity",
+                            })}
+                        />
+                        <ReactTooltip id="heatmap-tooltip" style={{ backgroundColor: "#000", border: "1px solid #333" }} />
                     </div>
-                  )}
                 </div>
-              </div>
+            </div>
+
+            {/*  Activity Graph */}
+            <ActivityGraph data={graphData} />
+            
+            {/*  Contest History  */}
+           <div className="space-y-6">
+                 {/* The Graph */}
+                 <ContestRatingGraph data={stats.contestHistory} />
+
+                 {/* The List  */}
+                 <div className={cardStyle}>
+                    <h2 className={headingStyle}><FaMedal className="text-orange-500"/> Recent Contests</h2>
+                    <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-800 pr-2">
+                        {stats.contestHistory && stats.contestHistory.length > 0 ? (
+                            stats.contestHistory.map((contest) => (
+                                 <div key={contest.contestId} className="flex justify-between items-center p-3 bg-gray-900/40 rounded border border-gray-800 hover:border-gray-600 transition-colors">
+                                     <div>
+                                         <div className="font-bold text-sm text-gray-200">{contest.title}</div>
+                                         <div className="text-[10px] text-gray-500 font-mono mt-0.5">{new Date(contest.date).toLocaleDateString()}</div>
+                                     </div>
+                                     <div className="text-right">
+                                        <div className="text-orange-400 font-black text-lg">#{contest.rank}</div>
+                                        <div className="text-[10px] text-gray-500">Score: {contest.score}</div>
+                                     </div>
+                                 </div>
+                            ))
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-50 py-4">
+                                <FaMedal size={24} className="mb-2"/>
+                                <p className="text-sm">No contest history yet.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/*  Recent Activity List */}
+            <div className={cardStyle}>
+                <h2 className={headingStyle}><FaTerminal className="text-orange-500"/> Recent Activity</h2>
+                <div className="space-y-3">
+                    {stats.recent.map((sub, idx) => (
+                         <div key={idx} className="flex justify-between items-center p-3 bg-gray-900/40 rounded border border-gray-800 hover:border-gray-600 transition-colors group">
+                             <div className="overflow-hidden">
+                                 <div className="font-medium text-sm text-gray-300 group-hover:text-white truncate">{sub.title}</div>
+                                 <div className="text-[10px] text-gray-600 font-mono mt-0.5">{new Date(sub.date).toLocaleDateString()} &bull; {sub.language}</div>
+                             </div>
+                             <span className={`text-[10px] px-2 py-1 rounded font-bold border uppercase tracking-wider ${
+                                 sub.status === "Accepted" 
+                                 ? "bg-green-950/30 text-green-400 border-green-900/30" 
+                                 : "bg-red-950/30 text-red-400 border-red-900/30"
+                             }`}>
+                                 {sub.status === "Accepted" ? "AC" : "WA"}
+                             </span>
+                         </div>
+                    ))}
+                    {stats.recent.length === 0 && (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-600 opacity-50 py-4">
+                            <FaCode size={24} className="mb-2"/>
+                            <p className="text-sm">No recent battles recorded.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 5. Admin / Account Controls (Only for Logged In User) */}
+            {isOwnProfile && loggedInUser && (
+                <div className={cardStyle}>
+                    <h2 className={headingStyle}><FaCog className="text-orange-500"/> Account Controls</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {(loggedInUser.role === "admin" || loggedInUser.role === "master") && (
+                            <>
+                                <button onClick={() => navigate("/admin/problems")} className={buttonSecondaryStyle}>
+                                    Manage Problems
+                                </button>
+                                <button onClick={() => navigate("/admin/contests")} className={buttonSecondaryStyle}>
+                                    Manage Contests
+                                </button>
+                            </>
+                        )}
+                        
+                        {loggedInUser.role === "master" && (
+                             <button onClick={() => navigate("/admin/dashboard")} className={`${buttonPrimaryStyle} sm:col-span-2`}>
+                                Master Dashboard
+                             </button>
+                        )}
+
+                        {loggedInUser.role === "user" && (
+                            <div className="sm:col-span-2 pt-2 border-t border-gray-800 mt-2">
+                                <p className="text-sm text-gray-400 mb-3">Want to contribute problems or manage contests?</p>
+                                <button 
+                                    onClick={handleRequestAdmin} 
+                                    disabled={isRequesting || user.adminRequestStatus === "pending"}
+                                    className={buttonPrimaryStyle}
+                                >
+                                    {isRequesting ? "Sending..." : user.adminRequestStatus === "pending" ? "Request Pending" : "Request Admin Access"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
+
           </div>
         </div>
       </div>
     </>
   );
 }
+
+// Helper Component for Stats Cards
+const StatsCard = ({ label, count, icon, color, border, bg }) => (
+    <div className={`${bg} border ${border} p-4 rounded-xl flex items-center justify-between transition-transform hover:-translate-y-1 duration-300`}>
+        <div>
+            <div className={`text-2xl font-black ${color}`}>{count}</div>
+            <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">{label}</div>
+        </div>
+        <div className={`text-xl opacity-20 ${color}`}>{icon}</div>
+    </div>
+);
 
 export default ProfilePage;

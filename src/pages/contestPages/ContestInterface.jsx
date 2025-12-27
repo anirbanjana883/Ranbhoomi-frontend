@@ -1,32 +1,24 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
-import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { serverUrl } from "../../App";
-import {
-  FaPlay,
-  FaPaperPlane,
-  FaCog,
-  FaList,
-  FaArrowLeft,
-} from "react-icons/fa";
-import { IoIosLock } from "react-icons/io";
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { serverUrl } from '../../App'; 
+import { FaPlay, FaPaperPlane } from 'react-icons/fa';
 
-// --- Import Child Components ---
-import ProblemDescription from "../../component/ProblemPageComponent/ProblemDescription";
-import CodeEditorPane from "../../component/ProblemPageComponent/CodeEditorPane";
-import ConsolePane from "../../component/ProblemPageComponent/ConsolePane";
-import ContestHeader from "../../component/ContestPageComponent/ContestHeader";
+// Import Components
+import ContestHeader from '../../component/ContestPageComponent/ContestHeader';
+import ContestProblemPane from '../../component/ContestPageComponent/ContestProblemPane';
+import ContestEditorPane from '../../component/ContestPageComponent/ContestEditorPane';
+import ContestConsolePane from '../../component/ContestPageComponent/ContestConsolePane';
 
-// --- Loading Spinner ---
-const LoadingSpinner = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-4">
-    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_30px_rgba(255,69,0,0.7),inset_0_0_8px_rgba(255,69,0,0.4)]"></div>
-    <p className="text-white text-lg">Entering the Arena...</p>
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+    <div className="w-16 h-16 border-4 border-orange-900 border-t-orange-500 rounded-full animate-spin"></div>
+    <p className="text-orange-500 font-mono text-sm animate-pulse">ENTERING ARENA...</p>
   </div>
 );
 
-function ContestInterface() {
+const ContestInterface = () => {
   const { slug, problemSlug } = useParams();
   const navigate = useNavigate();
 
@@ -34,372 +26,277 @@ function ContestInterface() {
   const [contest, setContest] = useState(null);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // --- UI State ---
-  const [activeProblemTab, setActiveProblemTab] = useState("description");
+  // --- UI State (Tabs) ---
+  const [activeLeftTab, setActiveLeftTab] = useState("description");
   const [activeConsoleTab, setActiveConsoleTab] = useState("testcase");
 
   // --- Editor State ---
-  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [code, setCode] = useState("");
-
+  const [language, setLanguage] = useState("javascript");
+  
   // --- Submission State ---
-  const [submissions, setSubmissions] = useState([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
-  const [pollingInterval, setPollingInterval] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
-  // --- Layout State (GFG Style) ---
-  const [leftPaneWidth, setLeftPaneWidth] = useState(45); // % width of Left Pane
-  const [descPaneHeight, setDescPaneHeight] = useState(60); // % height of Description (inside Left Pane)
-
-  // --- Refs ---
+  // --- Layout State ---
+  const [leftWidth, setLeftWidth] = useState(45); // % width of Left Column
+  const [descHeight, setDescHeight] = useState(60); // % height of Description Pane
   const containerRef = useRef(null);
   const leftPaneRef = useRef(null);
   const isResizingHorizontal = useRef(false);
   const isResizingVertical = useRef(false);
 
-  // --- 1. Fetch Contest & Problem Data ---
+  // --- 1. Fetch Data ---
   useEffect(() => {
     const fetchData = async () => {
-      if (!slug || !problemSlug) return;
-      setLoading(true);
-      setError(null);
       try {
-        const contestPromise = axios.get(`${serverUrl}/api/contests/${slug}`, {
-          withCredentials: true,
-        });
-        const problemPromise = axios.get(
-          `${serverUrl}/api/problems/getoneproblem/${problemSlug}`,
-          { withCredentials: true }
-        );
         const [contestRes, problemRes] = await Promise.all([
-          contestPromise,
-          problemPromise,
+          axios.get(`${serverUrl}/api/contests/${slug}`, { withCredentials: true }),
+          axios.get(`${serverUrl}/api/problems/getoneproblem/${problemSlug}`, { withCredentials: true })
         ]);
-        
-        const fetchedContest = contestRes.data;
-        const fetchedProblem = problemRes.data;
+
+        const contestData = contestRes.data;
+        const problemData = problemRes.data;
 
         // Validation
-        const now = new Date();
-        if (new Date(fetchedContest.endTime) <= now) {
-          toast.error("This contest has ended.");
-          navigate(`/contests`);
-          return;
-        }
-        if (new Date(fetchedContest.startTime) > now) {
-          toast.error("This contest has not started yet.");
-          navigate(`/contest/${slug}`);
-          return;
-        }
-        if (!fetchedContest.isRegistered) {
-          toast.error("You are not registered for this contest.");
-          navigate(`/contest/${slug}`);
-          return;
-        }
-        // Verify problem belongs to contest
-        const isProblemInContest = fetchedContest.problems.some(
-          (p) => p.problem.slug === problemSlug
-        );
-        if (!isProblemInContest) {
-          toast.error("This problem is not part of the contest.");
-          navigate(`/contest/${slug}`);
+        if (new Date(contestData.endTime) <= new Date()) {
+          toast.error("Contest has ended.");
+          navigate('/contests');
           return;
         }
 
-        setContest(fetchedContest);
-        setProblem(fetchedProblem);
-
-        // Init Code
-        if (fetchedProblem.starterCode?.length) {
-          setSelectedLanguage(fetchedProblem.starterCode[0].language);
-          setCode(fetchedProblem.starterCode[0].code);
+        setContest(contestData);
+        setProblem(problemData);
+        
+        // Initialize Code if starter code exists
+        if (problemData.starterCode && problemData.starterCode.length > 0) {
+          const starter = problemData.starterCode[0];
+          setLanguage(starter.language);
+          setCode(starter.code);
         } else {
-          setCode(`// No starter code found.`);
+          setCode("// No starter code available");
         }
 
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err.response?.data?.message || "Data not found.");
-        toast.error("Failed to load contest data.");
+        toast.error(err.response?.data?.message || "Failed to load contest data");
+        navigate('/contests');
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    if (slug && problemSlug) fetchData();
   }, [slug, problemSlug, navigate]);
 
-  // --- 2. Fetch CONTEST Submissions ---
-  useEffect(() => {
-    const fetchSubmissions = async () => {
-      if (activeProblemTab === "submissions" && problem?._id) {
-        setLoadingSubmissions(true);
-        try {
-          // Use the CONTEST specific endpoint
-          const { data } = await axios.get(
-            `${serverUrl}/api/contest-submissions/problem/${problem.slug}`,
-            { withCredentials: true }
-          );
-          setSubmissions(Array.isArray(data) ? data : []);
-        } catch (err) {
-          toast.error("Failed to load submissions.");
-        } finally {
-          setLoadingSubmissions(false);
-        }
-      }
-    };
-    if (problem) fetchSubmissions();
-  }, [activeProblemTab, problem, slug]);
+  // --- 2. Layout Resizing Logic ---
+  const handleMouseMove = (e) => {
+    // Horizontal Resize (Left vs Right)
+    if (isResizingHorizontal.current && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      if (newWidth > 25 && newWidth < 75) setLeftWidth(newWidth);
+    }
+    // Vertical Resize (Description vs Console)
+    if (isResizingVertical.current && leftPaneRef.current) {
+      const paneRect = leftPaneRef.current.getBoundingClientRect();
+      const newHeight = ((e.clientY - paneRect.top) / paneRect.height) * 100;
+      if (newHeight > 20 && newHeight < 80) setDescHeight(newHeight);
+    }
+  };
 
-  // --- 3. Resizing Logic ---
-  const handleMouseDownHorizontal = useCallback((e) => {
-    e.preventDefault();
-    isResizingHorizontal.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, []);
-
-  const handleMouseDownVertical = useCallback((e) => {
-    e.preventDefault();
-    isResizingVertical.current = true;
-    document.body.style.cursor = "row-resize";
-    document.body.style.userSelect = "none";
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
     isResizingHorizontal.current = false;
     isResizingVertical.current = false;
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  }, []);
-
-  const handleMouseMove = useCallback((e) => {
-    if (isResizingHorizontal.current && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
-      newWidth = Math.max(25, Math.min(75, newWidth));
-      setLeftPaneWidth(newWidth);
-    }
-    if (isResizingVertical.current && leftPaneRef.current) {
-      const rect = leftPaneRef.current.getBoundingClientRect();
-      let newHeight = ((e.clientY - rect.top) / rect.height) * 100;
-      newHeight = Math.max(20, Math.min(80, newHeight));
-      setDescPaneHeight(newHeight);
-    }
-  }, []);
+    document.body.style.userSelect = 'auto'; // Re-enable text selection
+  };
 
   useEffect(() => {
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, []);
 
-  // --- 4. Editor Handlers ---
-  const handleEditorChange = (val) => setCode(val || "");
-  const handleLanguageChange = (e) => {
-    const lang = e.target.value;
-    setSelectedLanguage(lang);
-    const starter = problem.starterCode.find((s) => s.language === lang);
-    setCode(starter ? starter.code : `// No starter code for ${lang}`);
-  };
+  // --- 3. Handlers ---
   const resetCode = () => {
-    const starter = problem.starterCode.find(
-      (s) => s.language === selectedLanguage
-    );
-    if (starter && window.confirm("Reset your code?")) setCode(starter.code);
-  };
-
-  // --- 5. Submission Logic (Contest Specific) ---
-  const pollForResult = (submissionId) => {
-    if (pollingInterval) clearInterval(pollingInterval);
-    setActiveConsoleTab("result");
-    setSubmissionResult({ status: "Judging" });
-    setIsSubmitting(true);
-
-    const interval = setInterval(async () => {
-      try {
-        const { data: result } = await axios.get(
-          `${serverUrl}/api/contest-submissions/status/${submissionId}`, // Contest Endpoint
-          { withCredentials: true }
-        );
-
-        if (result.status !== "Judging" && result.status !== "Pending") {
-          clearInterval(interval);
-          setPollingInterval(null);
-          setIsSubmitting(false);
-          setSubmissionResult(result);
-          toast.success(`Submission ${result.status}!`);
-          if (activeProblemTab === "submissions") {
-            setActiveProblemTab("");
-            setTimeout(() => setActiveProblemTab("submissions"), 50);
-          }
-        } else {
-          setSubmissionResult(result);
-        }
-      } catch (err) {
-        clearInterval(interval);
-        setPollingInterval(null);
-        setIsSubmitting(false);
-        setSubmissionResult({ status: "Error checking status." });
-      }
-    }, 2000);
-    setPollingInterval(interval);
-  };
-
-  const handleSubmit = async () => {
-    if (!code.trim()) return toast.warn("Code cannot be empty.");
-    setIsSubmitting(true);
-    setSubmissionResult(null);
-    setActiveConsoleTab("result");
-
-    try {
-      const { data: pendingSubmission } = await axios.post(
-        `${serverUrl}/api/contest-submissions`, // Contest Endpoint
-        { 
-            slug: contest.slug, 
-            problemSlug: problem.slug, 
-            language: selectedLanguage, 
-            code: code 
-        },
-        { withCredentials: true }
-      );
-      if (pendingSubmission._id) pollForResult(pendingSubmission._id);
-    } catch (err) {
-      setIsSubmitting(false);
-      toast.error("Submission failed.");
+    if (!problem) return;
+    const starter = problem.starterCode.find(s => s.language === language);
+    if (starter && window.confirm("Reset code to default?")) {
+      setCode(starter.code);
     }
   };
 
-  const handleRun = () => {
-    toast.info("Run feature is disabled in contests.");
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setLanguage(newLang);
+    const starter = problem.starterCode.find(s => s.language === newLang);
+    if (starter) setCode(starter.code);
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (error || !problem || !contest) return <div className="text-white text-center p-10">Data not found</div>;
+  // --- 4. Submission Logic ---
+  const handleSubmit = async () => {
+    if (!code.trim()) return toast.warning("Code cannot be empty");
+    
+    setIsSubmitting(true);
+    setSubmissionResult(null); 
+    setActiveConsoleTab("result"); 
+    
+    try {
+      const { data } = await axios.post(`${serverUrl}/api/contest-submissions`, {
+        slug,
+        problemSlug,
+        language,
+        code
+      }, { withCredentials: true });
 
-  // --- Styles ---
-  const actionBtnStyle = "flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all duration-300 transform active:scale-95 tracking-wide";
-  const runBtnStyle = `${actionBtnStyle} bg-gray-900 text-gray-300 border border-gray-700 hover:border-orange-500/50 opacity-50 cursor-not-allowed`; // Disabled look
-  const submitBtnStyle = `${actionBtnStyle} bg-gradient-to-r from-orange-600 to-red-600 text-white border border-orange-500/50 shadow-[0_0_20px_rgba(255,69,0,0.4)] hover:shadow-[0_0_30px_rgba(255,69,0,0.6)] hover:scale-105`;
+      setSubmissionResult(data); 
+      
+      if (data.status === "Accepted") {
+        toast.success("Correct Answer!");
+      } else {
+        toast.error(`Verdict: ${data.status}`);
+      }
+
+      // Refresh submissions list if tab is open
+      if (activeLeftTab === "submissions") {
+        setActiveLeftTab("description"); 
+        setTimeout(() => setActiveLeftTab("submissions"), 50);
+      }
+      
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || "Execution Error";
+      setSubmissionResult({ status: "Error", message: errorMsg });
+      toast.error("Submission Failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) return <LoadingScreen />;
 
   return (
-    <div
-      ref={containerRef}
-      className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden godfather-bg"
-    >
-      {/* ======================= CONTEST HEADER ======================= */}
-      {/* Contains Timer, Contest Title, A/B/C Links */}
-      <ContestHeader contest={contest} currentProblemSlug={problemSlug} />
+    <div className="flex flex-col h-screen bg-[#050505] overflow-hidden text-gray-200 font-sans">
+      
+      {/* HEADER */}
+      <ContestHeader 
+        contest={contest} 
+        currentProblemSlug={problemSlug} 
+        totalProblems={contest.problems.length}
+      />
 
-      {/* ======================= PROBLEM TOOLBAR ======================= */}
-      <div className="flex-shrink-0 flex items-center justify-between h-14 px-6 bg-[#0a0a0a]/90 border-b border-orange-900/60 z-10">
-         <div className="flex items-center gap-3 overflow-hidden">
-            <h1 className="text-lg font-bold text-white whitespace-nowrap truncate tracking-tight">
-              {problem.title}
-            </h1>
-            <span className="text-xs px-2 py-0.5 rounded border border-gray-700 text-gray-400 bg-gray-900">
-                {problem.difficulty}
-            </span>
-         </div>
-
-         {/* Action Buttons */}
-         <div className="flex items-center gap-4">
-            {/* Run is disabled visually in contest */}
-            <button onClick={handleRun} className={runBtnStyle}>
-                <FaPlay size={10} /> RUN
-            </button>
-            <button onClick={handleSubmit} disabled={isSubmitting} className={submitBtnStyle}>
-                <FaPaperPlane size={12} /> {isSubmitting ? "JUDGING..." : "SUBMIT"}
-            </button>
-         </div>
-
-         {/* Settings (AI Removed for Contest Fairness) */}
-         <div className="flex items-center gap-3 text-gray-400">
-            <button title="Settings" className="p-2 hover:text-orange-400 hover:bg-gray-900 rounded-full transition">
-                <FaCog size={18} />
-            </button>
-         </div>
-      </div>
-
-      {/* ======================= MAIN 3-PANE LAYOUT ======================= */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* MAIN LAYOUT */}
+      <div className="flex-1 flex overflow-hidden" ref={containerRef}>
         
-        {/* --- LEFT PANE (Description + Console) --- */}
-        <div
+        {/* === LEFT COLUMN (Description + Console) === */}
+        <div 
           ref={leftPaneRef}
-          className="flex flex-col h-full border-r border-orange-900/40"
-          style={{ width: `${leftPaneWidth}%` }}
+          style={{ width: `${leftWidth}%` }} 
+          className="flex flex-col h-full border-r border-orange-900/30"
         >
           {/* Top: Description */}
-          <div
-            className="flex flex-col overflow-hidden border-b border-orange-900/40"
-            style={{ height: `${descPaneHeight}%` }}
-          >
-            <ProblemDescription
+          <div style={{ height: `${descHeight}%` }} className="overflow-hidden">
+            <ContestProblemPane 
               problem={problem}
-              slug={problem.slug}
-              activeLeftTab={activeProblemTab}
-              setActiveLeftTab={setActiveProblemTab}
+              slug={problemSlug}
+              activeLeftTab={activeLeftTab}
+              setActiveLeftTab={setActiveLeftTab}
               submissions={submissions}
-              loadingSubmissions={loadingSubmissions}
               setSubmissions={setSubmissions}
+              loadingSubmissions={loadingSubmissions}
               setLoadingSubmissions={setLoadingSubmissions}
-              isContestMode={true} // Hides Solution tab
             />
           </div>
 
-          {/* Vertical Resizer */}
-          <div
-            onMouseDown={handleMouseDownVertical}
-            className="w-full h-1.5 bg-gradient-to-r from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10"
-            title="Drag to resize"
-          />
+          {/* Vertical Resizer (Added e.preventDefault) */}
+          <div 
+            onMouseDown={(e) => { 
+                e.preventDefault(); 
+                isResizingVertical.current = true;
+                document.body.style.userSelect = 'none'; // Disable text selection while dragging
+            }}
+            className="h-1.5 w-full bg-[#111] border-y border-orange-900/20 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10 flex items-center justify-center"
+          >
+             <div className="w-8 h-0.5 bg-gray-600 rounded-full"></div>
+          </div>
 
           {/* Bottom: Console */}
-          <div className="flex-1 min-h-0 overflow-hidden bg-black flex flex-col">
-            <ConsolePane
-              problemTestCases={problem.testCases}
-              submissionResult={submissionResult}
-              isSubmitting={isSubmitting}
-              handleSubmit={() => {}} // Handled in toolbar
-              handleRun={() => {}}    // Handled in toolbar
-              activeRightTab={activeConsoleTab}
-              setActiveRightTab={setActiveConsoleTab}
+          <div className="flex-1 min-h-0 bg-[#0a0a0a]">
+            <ContestConsolePane 
+               problemTestCases={problem.testCases}
+               submissionResult={submissionResult}
+               isSubmitting={isSubmitting}
+               activeRightTab={activeConsoleTab}
+               setActiveRightTab={setActiveConsoleTab}
             />
           </div>
         </div>
 
-        {/* --- HORIZONTAL RESIZER --- */}
-        <div
-          onMouseDown={handleMouseDownHorizontal}
-          className="w-1.5 h-full bg-gradient-to-b from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-col-resize transition-colors z-10"
-          title="Drag to resize"
-        />
-
-        {/* --- RIGHT PANE (Full Height Editor) --- */}
-        <div
-          className="flex flex-col h-full overflow-hidden"
-          style={{ width: `calc(${100 - leftPaneWidth}% - 6px)` }}
+        {/* Horizontal Resizer (Added e.preventDefault) */}
+        <div 
+          onMouseDown={(e) => { 
+            e.preventDefault(); 
+            isResizingHorizontal.current = true;
+            document.body.style.userSelect = 'none'; // Disable text selection while dragging
+          }}
+          className="w-1.5 h-full bg-[#050505] hover:bg-orange-600/50 cursor-col-resize transition-colors z-10 flex items-center justify-center"
         >
-          <CodeEditorPane
-            problem={problem}
-            selectedLanguage={selectedLanguage}
-            code={code}
-            handleLanguageChange={handleLanguageChange}
-            handleEditorChange={handleEditorChange}
-            resetCode={resetCode}
-          />
+          <div className="h-8 w-0.5 bg-gray-700 rounded"></div>
         </div>
 
+        {/* === RIGHT COLUMN (Editor) === */}
+        <div style={{ width: `calc(${100 - leftWidth}% - 6px)` }} className="h-full flex flex-col min-w-0">
+          
+          {/* EDITOR */}
+          <div className="flex-1 min-h-0">
+            <ContestEditorPane 
+              problem={problem}
+              code={code} 
+              handleEditorChange={setCode}
+              selectedLanguage={language}
+              handleLanguageChange={handleLanguageChange}
+              resetCode={resetCode}
+            />
+          </div>
+
+          {/* ACTION FOOTER */}
+          <div className="h-14 bg-[#111] border-t border-orange-900/30 flex items-center justify-between px-6 shrink-0">
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+               <span className="w-2 h-2 rounded-full bg-green-500"></span> Online
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => toast.info("Run is disabled in strict contest mode.")}
+                className="flex items-center gap-2 px-4 py-2 rounded text-sm font-bold text-gray-400 border border-gray-700 hover:border-gray-500 transition-all opacity-50 cursor-not-allowed"
+              >
+                <FaPlay size={10} /> Run
+              </button>
+
+              <button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-6 py-2 rounded bg-orange-600 text-white text-sm font-bold shadow-[0_0_15px_rgba(255,69,0,0.4)] hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-wait"
+              >
+                {isSubmitting ? (
+                  <span className="animate-pulse">Judging...</span>
+                ) : (
+                  <>
+                    <FaPaperPlane size={12} /> Submit
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default ContestInterface;

@@ -44,7 +44,8 @@ function App() {
 
   const showNav = !hideNavPaths.includes(location.pathname) && 
                 !location.pathname.startsWith('/problem/') && 
-                !location.pathname.startsWith('/interview/room/');
+                !location.pathname.startsWith('/interview/room/') &&
+                !location.pathname.startsWith('/contest/') ;
 
 
   return (
@@ -63,7 +64,7 @@ function App() {
         <Route path='/editprofile' element={userData ? <EditProfile /> : <Navigate to="/login" />} />
 
         {/* practice problem */}
-        <Route path='/practice' element={userData ? <ProblemListPage /> : <Navigate to="/login" />} />    
+        <Route path='/practice' element={userData ? <ProblemListPage /> : <Navigate to="/login" />} /> 
         <Route path='/problem/:slug' element={userData ? <ProblemPage /> : <Navigate to="/login" />} />
 
 

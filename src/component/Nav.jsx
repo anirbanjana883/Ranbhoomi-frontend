@@ -8,6 +8,8 @@ import { TfiMenu } from "react-icons/tfi";
 import { GiTireIronCross } from "react-icons/gi";
 import { TbLogout } from "react-icons/tb";
 import { IoPersonCircleSharp } from "react-icons/io5";
+import { FaCrown } from "react-icons/fa"; 
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom"; // 1. Import useLocation
 import { serverUrl } from "../App";
@@ -102,6 +104,22 @@ const activeLinkStyles = `
   const mobileLinkStyles =
     "flex items-center gap-4 text-3xl font-bold text-[#D3D3D3] transition-all duration-300 transform hover:text-[#FF4500] hover:scale-105";
 
+    // --- HELPER: Dynamic Premium Ring Styles ---
+  const getProfileStyles = (plan) => {
+    switch (plan) {
+      case "Gladiator":
+        return "border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] bg-yellow-900/20"; // Gold
+      case "Warrior":
+        return "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] bg-red-900/20"; // Red
+      default: 
+        return "border-orange-600/60 shadow-[0_0_25px_rgba(255,100,0,0.3)] bg-orange-1000/30"; // Orange
+    }
+  };
+
+  const profileRingClass = userData 
+    ? getProfileStyles(userData.subscriptionPlan)
+    : "border-orange-600/60 shadow-[0_0_25px_rgba(255,100,0,0.3)] bg-orange-1000/30";
+
   return (
     <>
       {/* ####### Desktop: Frosted Glass Dynamic Island (NEW STRUCTURE) ####### */}
@@ -139,27 +157,49 @@ const activeLinkStyles = `
               <span className="text-sm">{link.title}</span>
             </button>
           ))}
+
+          {/* --- PREMIUM UPGRADE BUTTONS --- */}
+          {userData && (
+            <>
+              <div className="w-px h-6 bg-orange-500/30 mx-1"></div>
+              
+              {/* Go Pro Button (Free Plan) */}
+              {userData.subscriptionPlan === "Free" && (
+                <button
+                  onClick={() => navigate("/premium")}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-orange-600 to-red-600 hover:scale-105 transition-transform shadow-[0_0_15px_rgba(255,69,0,0.4)]"
+                >
+                  <FaCrown className="text-yellow-300" /> Go Pro
+                </button>
+              )}
+
+              {/* Status Badge (Paid Plans) */}
+              {userData.subscriptionPlan !== "Free" && (
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-black/40 ${
+                  userData.subscriptionPlan === "Gladiator" ? "border-yellow-500/50 text-yellow-400" : "border-red-500/50 text-red-400"
+                }`}>
+                  <FaCrown size={12} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{userData.subscriptionPlan}</span>
+                </div>
+              )}
+            </>
+          )}
         </nav>
 
-        {/* Right: Profile Circle */}
+        {/* Right: Profile Circle (Dynamic Color) */}
         <div className="relative pl-4" ref={profileRef}>
           <div
-            className={`w-14 h-14 rounded-full cursor-pointer flex items-center justify-center overflow-hidden ${glassIslandStyle} hover:scale-110`}
+            className={`w-14 h-14 rounded-full cursor-pointer flex items-center justify-center overflow-hidden border backdrop-blur-xl transition-all duration-300 hover:scale-110 ${profileRingClass}`}
             onClick={() => setShowProfileDropdown((prev) => !prev)}
           >
             {userData?.photoUrl ? (
-              <img
-                src={userData.photoUrl}
-                alt="profile"
-                className="w-full h-full object-cover" // Fills the glass parent
-              />
+              <img src={userData.photoUrl} alt="profile" className="w-full h-full object-cover" />
             ) : userData ? (
-              // 5. Themed background for initial
               <div className="w-full h-full rounded-full text-white flex items-center justify-center text-2xl font-bold bg-orange-900/60">
                 {userData.name.slice(0, 1).toUpperCase()}
               </div>
             ) : (
-              <IoPersonCircleSharp className="w-10 h-10 text-orange-500/70 transition-colors duration-300 hover:text-orange-400" />
+              <IoPersonCircleSharp className="w-10 h-10 text-orange-500/70 hover:text-orange-400" />
             )}
           </div>
 

@@ -2,19 +2,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { serverUrl } from '../../App'; // Adjust path if needed
-import { FaArrowLeft, FaPlay, FaCalendarAlt, FaHistory } from 'react-icons/fa';
+import { serverUrl } from '../../App.jsx'; 
+import { FaArrowLeft, FaPlay, FaCalendarAlt, FaHistory, FaPlus, FaLock } from 'react-icons/fa';
 
 // --- Loading Spinner ---
 const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin
-                    [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"></div>
+        <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_25px_rgba(255,69,0,0.6)]"></div>
     </div>
 );
 
-// --- New "Professional Glow" Card Component ---
-// This component encapsulates the new style.
+// --- Contest Card Component ---
 const ContestCard = ({ contest, type }) => {
     const navigate = useNavigate();
     
@@ -25,7 +23,7 @@ const ContestCard = ({ contest, type }) => {
     let buttonText = 'View Contest';
 
     if (type === 'live') {
-        borderColor = 'border-green-500/60'; // Live is green
+        borderColor = 'border-green-500/60';
         shadowColor = 'shadow-[0_0_15px_rgba(0,255,0,0.2)]';
         hoverShadowColor = 'hover:shadow-[0_0_25px_rgba(0,255,0,0.4)]';
         buttonStyle = 'bg-green-600 hover:bg-green-700 shadow-[0_0_15px_rgba(0,255,0,0.4)] hover:shadow-[0_0_20px_rgba(0,255,0,0.6)]';
@@ -43,7 +41,7 @@ const ContestCard = ({ contest, type }) => {
             className={`bg-black border ${borderColor} ${shadowColor} rounded-xl 
                         p-5 flex flex-col justify-between transition-all duration-300 
                         hover:border-orange-600/70 ${hoverShadowColor} hover:-translate-y-1 cursor-pointer`}
-            onClick={() => navigate(`/contest/${contest.slug}`)} // Navigate to contest details page
+            onClick={() => navigate(`/contest/${contest.slug}`)} 
         >
             <div>
                 <h3 className="text-xl font-bold text-white mb-2 truncate [text-shadow:0_0_8px_rgba(255,255,255,0.3)]">
@@ -60,10 +58,7 @@ const ContestCard = ({ contest, type }) => {
                 <p className="text-xs text-gray-500">
                     Ends: {new Date(contest.endTime).toLocaleString()}
                 </p>
-                <button 
-                    className={`w-full mt-4 py-2 px-4 rounded-lg text-white text-sm font-bold 
-                                ${buttonStyle} transition-all duration-300 transform hover:scale-105`}
-                >
+                <button className={`w-full mt-4 py-2 px-4 rounded-lg text-white text-sm font-bold ${buttonStyle} transition-all duration-300 transform hover:scale-105`}>
                     {buttonText}
                 </button>
             </div>
@@ -87,23 +82,57 @@ const SectionHeader = ({ icon, title, count }) => (
 // --- Main Contest List Page ---
 function ContestListPage() {
     const [contests, setContests] = useState({ upcoming: [], live: [], past: [] });
+    const [currentUser, setCurrentUser] = useState(null); 
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchContests = async () => {
+        const fetchAllData = async () => {
             setLoading(true);
             try {
-                const { data } = await axios.get(`${serverUrl}/api/contests`, { withCredentials: true });
-                setContests(data);
+                // 1. Fetch Contests
+                const contestRes = await axios.get(`${serverUrl}/api/contests`, { withCredentials: true });
+                setContests(contestRes.data);
+
+
+                try {
+                    const userRes = await axios.get(`${serverUrl}/api/user/getcurrentuser`, { withCredentials: true });
+                    setCurrentUser(userRes.data);
+                } catch (e) {
+                    console.log("User not logged in or fetch failed");
+                }
+
             } catch (err) {
-                toast.error(err.response?.data?.message || "Failed to fetch contests.");
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchContests();
+        fetchAllData();
     }, []);
+
+    // --- SMART BUTTON LOGIC (Fixed Order) ---
+    // Safely check premium status
+    const isPremium = currentUser && currentUser.subscriptionPlan !== 'Free';
+
+    const handleHostClick = () => {
+        // 1. Check Login FIRST
+        if (!currentUser) {
+            toast.error("Please login to host a contest.");
+            navigate('/login');
+            return;
+        }
+
+        // 2. Check Premium SECOND
+        if (!isPremium) {
+            toast.info("Hosting Private Arenas is a Premium feature.");
+            navigate('/premium'); // Redirect to subscription page
+            return;
+        }
+        
+        // 3. Success
+        navigate('/contest/create-private');
+    };
 
     if (loading) return <LoadingSpinner />;
 
@@ -111,7 +140,7 @@ function ContestListPage() {
         <>
             {/* Back Button */}
             <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/')}
                 className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md 
                            border border-orange-600/40 shadow-[0_0_20px_rgba(255,69,0,0.25)] 
                            text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 
@@ -120,15 +149,34 @@ function ContestListPage() {
                            hover:text-orange-400 hover:scale-105"
             >
                 <FaArrowLeft />
-                <span className="hidden sm:inline">Back</span>
+                <span className="hidden sm:inline">Home</span>
             </button>
 
             <div className="min-h-screen bg-black text-gray-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20 godfather-bg">
                 <div className="max-w-screen-xl mx-auto">
-                    <h1 className="text-4xl font-black text-white mb-8
-                                   [text-shadow:0_0_15px_rgba(255,255,255,0.4),0_0_30px_rgba(255,69,0,0.7)]">
-                        Contest Arena
-                    </h1>
+                    
+                    {/* --- HEADER WITH SMART BUTTON --- */}
+                    <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
+                        <div>
+                            <h1 className="text-4xl font-black text-white 
+                                           [text-shadow:0_0_15px_rgba(255,255,255,0.4),0_0_30px_rgba(255,69,0,0.7)]">
+                                Contest Arena
+                            </h1>
+                            <p className="text-gray-500 mt-2 text-sm">Compete, Practice, and Dominate.</p>
+                        </div>
+                        
+                        {/* CONDITIONAL HOST BUTTON */}
+                        <button 
+                            onClick={handleHostClick}
+                            className={`flex items-center gap-2 font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105
+                                        ${isPremium 
+                                            ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-[0_0_20px_rgba(255,69,0,0.4)] hover:shadow-[0_0_35px_rgba(255,69,0,0.6)]' 
+                                            : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-orange-500/50 hover:text-orange-500'}`}
+                        >
+                            {isPremium ? <FaPlus /> : <FaLock />}
+                            {isPremium ? 'Host Private Arena' : 'Host Arena (Premium)'}
+                        </button>
+                    </div>
 
                     {/* --- Live Contests --- */}
                     {contests.live.length > 0 && (
@@ -152,7 +200,10 @@ function ContestListPage() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-gray-500 italic">No upcoming contests scheduled. Check back soon!</p>
+                            <p className="text-gray-500 italic p-4 border border-dashed border-gray-800 rounded-lg">
+                                No official contests scheduled. 
+                                {isPremium ? " You can host your own!" : " Upgrade to host your own!"}
+                            </p>
                         )}
                     </section>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { serverUrl } from "../../App";
 import {
@@ -53,6 +54,7 @@ function ProblemListPage() {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { userData } = useSelector((state) => state.user);
   const [difficultyFilter, setDifficultyFilter] = useState("All");
   const [selectedTags, setSelectedTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,6 +175,30 @@ function ProblemListPage() {
   const handleCompanySelect = (company) => {
     setSelectedCompany(company);
     setShowCompanyDropdown(false);
+  };
+  
+  //  PREMIUM CLICK INTERCEPTOR 
+  const handleProblemClick = (e, prob) => {
+    // If NOT premium, let them pass
+    if (!prob.isPremium) return;
+
+    // If User NOT logged in -> Login
+    if (!userData) {
+      e.preventDefault();
+      toast.info("Login required to access Premium content.");
+      navigate("/login");
+      return;
+    }
+
+    // Check Plan
+    const isPaid = ["Warrior", "Gladiator"].includes(userData.subscriptionPlan);
+    const isAdmin = ["admin", "master"].includes(userData.role);
+
+    if (!isPaid && !isAdmin) {
+      e.preventDefault(); // STOP NAVIGATION
+      toast.warning("🔒 Premium Content! Upgrade to unlock.");
+      navigate("/premium"); // REDIRECT TO PAY
+    }
   };
   const handlePickRandom = () => {
     if (problems.length > 0) {
@@ -434,7 +460,8 @@ function ProblemListPage() {
               </div>
             )}
           </div>
-          {/* --- End Filter Section --- */}
+          
+          
           {/* Enhanced Table Container */}
           <div className={tableContainerStyle}>
             {loading && (
@@ -486,6 +513,7 @@ function ProblemListPage() {
                             )}
                             <Link
                               to={`/problem/${prob.slug}`}
+                              onClick={(e) => handleProblemClick(e, prob)}
                               className={titleLinkStyle}
                             >
                               {prob.title}

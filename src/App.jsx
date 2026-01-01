@@ -31,6 +31,9 @@ import InterviewLobby from './pages/interviewPages/InterviewLobby';
 import InterviewRoom from './pages/interviewPages/InterviewRoom';
 import RoadmapListPage from './pages/roadmapPages/RoadmapListPage';
 import RoadmapDetailsPage from './pages/roadmapPages/RoadmapDetailsPage';
+import PricingSection from './component/PricingSection';
+import CreatePrivateContest from './pages/premiumUser/CreatePrivateContest';
+import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
 
 export const serverUrl = "http://localhost:8000";
 
@@ -91,6 +94,8 @@ function App() {
         <Route path='/contest/:slug' element={userData ? <ContestDetailsPage /> : <Navigate to="/login" />} />
         <Route path='/contest/:slug/problem/:problemSlug' element={userData ? <ContestInterface /> : <Navigate to="/login" />} />
         <Route path='/contest/:slug/ranking' element={userData ? <ContestRankingPage /> : <Navigate to="/login" />} />
+        <Route path="/contest/create-private" element={<CreatePrivateContest />} /> 
+        <Route path="/contest/edit-private/:slug" element={<EditPrivateContest />} />
 
         {/* interview routes */}
         <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
@@ -99,7 +104,10 @@ function App() {
 
         {/* roadmaps */}
         <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />
-        <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> {/* <-- 2. Add this */}
+        <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> 
+
+        {/* payment on razorpay */}
+        <Route path='/premium' element={<PricingSection />} />
         
       </Routes>
     </>

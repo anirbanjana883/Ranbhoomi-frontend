@@ -35,11 +35,12 @@ import PricingSection from './component/PricingSection';
 import CreatePrivateContest from './pages/premiumUser/CreatePrivateContest';
 import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
 
-export const serverUrl = "http://localhost:8000";
+export const serverUrl = "http://localhost:5000";
 
 function App() {
   getCurrentUser();
-  const { userData } = useSelector(state => state.user);
+
+const { userData, loading } = useSelector(state => state.user);
   
   const location = useLocation();
 
@@ -49,6 +50,14 @@ function App() {
                 !location.pathname.startsWith('/problem/') && 
                 !location.pathname.startsWith('/interview/room/') &&
                 !location.pathname.startsWith('/contest/') ;
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <h2>Loading Ranbhoomi...</h2>
+      </div>
+    );
+  }
 
 
   return (

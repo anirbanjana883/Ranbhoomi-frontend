@@ -4,7 +4,7 @@ import Home from './pages/Home';
 import SignUp from './pages/authenticationPages/SignUp';
 import Login from './pages/authenticationPages/Login';
 import { ToastContainer } from 'react-toastify';
-import getCurrentUser from './customHooks/getCurrentUser';
+import useGetCurrentUser from "./customHooks/useGetCurrentUser";
 import { useSelector } from 'react-redux';
 import ScrollToTop from './component/ScrollToTop';
 import ForgetPassowrd from './pages/authenticationPages/ForgetPassword';
@@ -38,7 +38,7 @@ import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
 export const serverUrl = "http://localhost:5000";
 
 function App() {
-  getCurrentUser();
+  useGetCurrentUser();
 
 const { userData, loading } = useSelector(state => state.user);
   

@@ -209,11 +209,12 @@ function ProblemPage() {
     setPollingInterval(interval);
   };
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     if (!code.trim()) return toast.warn("Code cannot be empty.");
+    
     setIsSubmitting(true);
     setSubmissionResult(null);
-    setActiveConsoleTab("result");
+    setActiveConsoleTab("result"); 
 
     try {
       const { data: pendingSubmission } = await axios.post(
@@ -221,10 +222,26 @@ function ProblemPage() {
         { slug: problem.slug, language: selectedLanguage, code },
         { withCredentials: true }
       );
-      if (pendingSubmission._id) pollForResult(pendingSubmission._id);
+
+      
+      if (pendingSubmission._id) {
+         toast.success("Submission Queued! ");
+         pollForResult(pendingSubmission._id);
+      }
+
     } catch (err) {
       setIsSubmitting(false);
-      toast.error("Submission failed.");
+
+      //  RATE LIMIT CHECK 
+      if (err.response && err.response.status === 429) {
+        toast.warning(err.response.data.message || "You are submitting too fast! ");
+      } 
+      // Handle other specific errors
+      else if (err.response) {
+        toast.error(err.response.data.message || "Submission failed.");
+      } else {
+        toast.error("Network Error. Check your connection.");
+      }
     }
   };
 

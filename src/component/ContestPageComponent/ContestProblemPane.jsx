@@ -136,7 +136,7 @@ function ContestProblemPane({
       </div>
 
       {/* --- CONTENT AREA --- */}
-      <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
+      <div className="p-6 grow overflow-y-auto custom-scrollbar">
         
         {/* --- DESCRIPTION TAB --- */}
         {activeLeftTab === "description" && (

@@ -120,7 +120,7 @@ function ContestConsolePane({
       </div>
 
       {/* --- Content Area --- */}
-      <div className="flex-grow p-4 overflow-y-auto custom-scrollbar">
+      <div className="grow p-4 overflow-y-auto custom-scrollbar">
         
         {/* TAB: TESTCASES */}
         {activeRightTab === "testcase" && (

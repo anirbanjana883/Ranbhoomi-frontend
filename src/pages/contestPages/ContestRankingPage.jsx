@@ -40,7 +40,7 @@ const RankingPodium = ({ topThree }) => {
                         {score} <span className="text-xs text-gray-500">pts</span>
                     </p>
                 </div>
-                <div className={`w-full ${rank === 1 ? 'h-32' : rank === 2 ? 'h-20' : 'h-12'} bg-gradient-to-t from-orange-900/40 to-transparent border-t-4 ${color} rounded-t-lg opacity-80`}></div>
+                <div className={`w-full ${rank === 1 ? 'h-32' : rank === 2 ? 'h-20' : 'h-12'} bg-linear-to-t from-orange-900/40 to-transparent border-t-4 ${color} rounded-t-lg opacity-80`}></div>
             </div>
         );
     };
@@ -58,9 +58,22 @@ const RankingPodium = ({ topThree }) => {
     );
 };
 
-// --- RANK ROW COMPONENT ---
+// --- RANK ROW COMPONENT (SAFE VERSION) ---
 const RankRow = ({ rankEntry, rankIndex }) => {
     const { user, totalScore, totalPenalty } = rankEntry;
+
+    // 🛡️ SAFETY CHECK: If user is missing or just an ID string, show a fallback
+    if (!user || typeof user !== 'object') {
+        return (
+            <tr className="border-b border-gray-800 bg-red-900/10">
+                <td className="p-4 text-center">#{rankIndex + 1}</td>
+                <td className="p-4 text-red-400 italic">User data missing</td>
+                <td className="p-4 text-center">{totalScore}</td>
+                <td className="p-4 text-center">-</td>
+            </tr>
+        );
+    }
+
     const hours = Math.floor(totalPenalty / 60).toString().padStart(2, '0');
     const minutes = Math.floor(totalPenalty % 60).toString().padStart(2, '0');
     const seconds = Math.floor((totalPenalty * 60) % 60).toString().padStart(2, '0');
@@ -75,11 +88,20 @@ const RankRow = ({ rankEntry, rankIndex }) => {
         <tr className="border-b border-gray-800 hover:bg-white/5 transition-colors">
             <td className="p-4 text-center text-lg font-bold text-gray-400 font-mono">{rankDisplay}</td>
             <td className="p-4 text-sm align-middle">
-                <Link to={`/profile/${user.username}`} className="flex items-center gap-3 group">
-                    <img src={user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username}`} alt={user.username} className="w-8 h-8 rounded-full border border-gray-700 group-hover:border-orange-500 transition-colors" />
+                {/* 🛡️ Ensure username exists before linking */}
+                <Link to={user.username ? `/profile/${user.username}` : '#'} className="flex items-center gap-3 group">
+                    <img 
+                        src={user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username || 'unknown'}`} 
+                        alt={user.username || 'User'} 
+                        className="w-8 h-8 rounded-full border border-gray-700 group-hover:border-orange-500 transition-colors" 
+                    />
                     <div className="flex flex-col">
-                        <span className="font-bold text-gray-200 group-hover:text-white transition-colors">{user.name}</span>
-                        <span className="text-[10px] text-gray-500 font-mono">@{user.username}</span>
+                        <span className="font-bold text-gray-200 group-hover:text-white transition-colors">
+                            {user.name || user.username || "Unknown User"}
+                        </span>
+                        <span className="text-[10px] text-gray-500 font-mono">
+                            @{user.username || "unknown"}
+                        </span>
                     </div>
                 </Link>
             </td>
@@ -101,15 +123,15 @@ function ContestRankingPage() {
     // Fetch Data
     const fetchRanking = async () => {
         try {
-            // 1. Get Rankings
+            // Get Rankings
             const { data } = await axios.get(`${serverUrl}/api/contests/${slug}/ranking`, { withCredentials: true });
             setRankingData(data);
             
-            // 2. Get Contest Details
+            // Get Contest Details
             const contestRes = await axios.get(`${serverUrl}/api/contests/${slug}`, { withCredentials: true });
             setContest(contestRes.data);
 
-            // 3. Get Current User (For Host Check)
+            // Get Current User (For Host Check)
             try {
                 const userRes = await axios.get(`${serverUrl}/api/user/getcurrentuser`, { withCredentials: true });
                 setCurrentUser(userRes.data);
@@ -199,7 +221,7 @@ function ContestRankingPage() {
                                     </tr>
                                 ) : (
                                     rankings.map((entry, index) => (
-                                        <RankRow key={entry.user._id} rankEntry={entry} rankIndex={index} />
+                                        <RankRow key={entry.user || index} rankEntry={entry} rankIndex={index} />
                                     ))
                                 )}
                             </tbody>

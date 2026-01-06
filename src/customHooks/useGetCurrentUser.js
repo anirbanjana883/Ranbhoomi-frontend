@@ -4,7 +4,7 @@ import { serverUrl } from "../App";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 
-// 1. Rename to 'useGetCurrentUser' (Hooks must start with 'use')
+// Rename to 'useGetCurrentUser' (Hooks must start with 'use')
 const useGetCurrentUser = () => {
   const dispatch = useDispatch();
 

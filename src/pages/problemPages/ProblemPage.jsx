@@ -265,7 +265,7 @@ const handleSubmit = async () => {
       className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden godfather-bg"
     >
       {/* ======================= TOP NAVBAR ======================= */}
-      <header className="flex-shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
+      <header className="shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
         {/* LEFT: Back Button & Title */}
         <div className="flex items-center gap-5 min-w-0 overflow-hidden">
           <button
@@ -368,7 +368,7 @@ const handleSubmit = async () => {
           {/* Vertical Resizer */}
           <div
             onMouseDown={handleMouseDownVertical}
-            className="w-full h-1.5 bg-gradient-to-r from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10"
+            className="w-full h-1.5 bg-linear-to-r from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10"
             title="Drag to resize"
           />
 
@@ -390,7 +390,7 @@ const handleSubmit = async () => {
         {/* --- HORIZONTAL RESIZER --- */}
         <div
           onMouseDown={handleMouseDownHorizontal}
-          className="w-1.5 h-full bg-gradient-to-b from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-col-resize transition-colors z-10"
+          className="w-1.5 h-full bg-linear-to-b from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-col-resize transition-colors z-10"
           title="Drag to resize"
         />
 

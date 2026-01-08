@@ -5,28 +5,71 @@ import {
   FaPaperPlane,
   FaRobot,
   FaTimes,
-  FaEraser,
   FaBolt,
 } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 import { toast } from "react-toastify";
 
+// Plan Limits (Must match Backend)
+const PLAN_LIMITS = {
+  Free: 3,
+  Warrior: 1000,
+  Gladiator: 10000,
+};
+
 const AIChatPanel = ({ onClose, problem, userCode }) => {
+  // 1. Setup State
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: `Greetings, Warrior. I am **Bhoomi**. I have analyzed the battlefield ("${problem.title}"). \n\nWhat is your strategy?`,
+      text: `**System Online.** I am **Bhoomi**, your Technical Commander. \n\nI have analyzed the problem parameters for *"${problem.title}"*. \n\nWhat is your implementation strategy?`,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [credits, setCredits] = useState(3);
+  const [credits, setCredits] = useState(null); // Starts null, but we fetch it immediately
   const messagesEndRef = useRef(null);
 
+  // 2. Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 3. NEW: Fetch Credits on Mount (Fixes the "Hidden Badge" issue)
+  useEffect(() => {
+    const fetchUserCredits = async () => {
+      try {
+        const { data } = await axios.get(`${serverUrl}/api/user/getcurrentuser`, {
+          withCredentials: true,
+        });
+
+        if (data && data.user) {
+          const user = data.user;
+          // Calculate remaining credits locally based on user data
+          const plan = user.subscriptionPlan || "Free";
+          const limit = PLAN_LIMITS[plan] || 3;
+          const used = user.aiUsage?.count || 0;
+          
+          // Check if usage needs reset (Frontend estimation to prevent ugly numbers)
+          const lastUsed = new Date(user.aiUsage?.lastUsed || Date.now()).toDateString();
+          const today = new Date().toDateString();
+          
+          if (lastUsed !== today) {
+             setCredits(limit); // It will reset on next backend call anyway
+          } else {
+             setCredits(Math.max(0, limit - used));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch credits:", error);
+        // Fallback: don't show badge or show 0
+      }
+    };
+
+    fetchUserCredits();
+  }, []);
+
+  // 4. Handle Sending Messages
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -49,7 +92,10 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
       );
 
       setMessages((prev) => [...prev, { role: "ai", text: data.reply }]);
+      
+      // Update credits from the accurate backend response
       if (data.remaining !== undefined) setCredits(data.remaining);
+
     } catch (err) {
       if (err.response?.status === 403 && err.response?.data?.limitReached) {
         setMessages((prev) => [
@@ -84,16 +130,20 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Credit Counter */}
+          {/* Credit Counter - Now shows "..." if loading, then the number */}
           <div
             className={`flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-full border ${
-              credits > 0
+              credits !== null && credits > 0
                 ? "text-green-400 border-green-900 bg-green-900/20"
                 : "text-red-400 border-red-900 bg-red-900/20"
             }`}
           >
             <FaBolt size={10} />
-            <span>{credits} left</span>
+            {credits === null ? (
+              <span className="animate-pulse">...</span>
+            ) : (
+              <span>{credits} left</span>
+            )}
           </div>
 
           <button
@@ -160,7 +210,7 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
           />
           <button
             type="submit"
-            disabled={loading || !input.trim() || credits <= 0}
+            disabled={loading || !input.trim() || (credits !== null && credits <= 0)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-600 text-white rounded-md hover:bg-orange-500 disabled:opacity-50 disabled:bg-gray-700 transition-colors"
           >
             <FaPaperPlane size={12} />

@@ -34,6 +34,7 @@ import RoadmapDetailsPage from './pages/roadmapPages/RoadmapDetailsPage';
 import PricingSection from './component/PricingSection';
 import CreatePrivateContest from './pages/premiumUser/CreatePrivateContest';
 import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
+import Community from './pages/Community/Community';
 
 export const serverUrl = "http://localhost:5000";
 
@@ -117,6 +118,9 @@ const { userData, loading } = useSelector(state => state.user);
 
         {/* payment on razorpay */}
         <Route path='/premium' element={<PricingSection />} />
+
+        {/* community page */}
+        <Route path="/community" element={<Community />} />
         
       </Routes>
     </>

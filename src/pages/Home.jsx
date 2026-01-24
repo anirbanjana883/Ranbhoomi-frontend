@@ -1,287 +1,429 @@
-import React, { useEffect, useRef } from 'react';
-import Nav from '../component/Nav.jsx'; // Your Nav component
-import Footer from '../component/Footer.jsx';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, useScroll, useTransform, useMotionTemplate, useMotionValue } from 'framer-motion';
+import { FaCode, FaTrophy, FaBrain, FaChevronDown, FaTwitter, FaGithub, FaLinkedin, FaCheck, FaRobot, FaCrown, FaUserNinja, FaFireAlt, FaDiscord, FaYoutube, FaTerminal,FaTimes } from 'react-icons/fa';
 
-function Home() {
-  const canvasRef = useRef(null);
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
+import { serverUrl } from '../App';
 
-  // useEffect to handle the particle animation script
+// --- UTILS & ANIMATIONS ---
+
+// 1. Mouse Spotlight Effect for Bento Grids
+function useMousePosition() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return; // Exit if canvas isn't rendered yet
-
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-
-    function setCanvasSize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 1;
-        this.speedX = (Math.random() * 1 - 0.5) * 0.5;
-        this.speedY = (Math.random() * 1 - 0.5) * 0.5;
-        this.color = 'rgba(255, 69, 0, 0.5)'; // Volcanic Orange
-      }
-
-      update() {
-        if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
-        if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
-        this.x += this.speedX;
-        this.y += this.speedY;
-      }
-
-      draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function init() {
-      particles = [];
-      let numberOfParticles = (canvas.width * canvas.height) / 9000;
-      for (let i = 0; i < numberOfParticles; i++) {
-        particles.push(new Particle());
-      }
-    }
-
-    function connect() {
-      let opacityValue = 1;
-      for (let a = 0; a < particles.length; a++) {
-        for (let b = a; b < particles.length; b++) {
-          let distance = Math.sqrt(
-            (particles[a].x - particles[b].x) ** 2 +
-            (particles[a].y - particles[b].y) ** 2
-          );
-
-          if (distance < 120) {
-            opacityValue = 1 - (distance / 120);
-            ctx.strokeStyle = `rgba(255, 69, 0, ${opacityValue * 0.2})`; // Faint orange lines
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(particles[a].x, particles[a].y);
-            ctx.lineTo(particles[b].x, particles[b].y);
-            ctx.stroke();
-          }
-        }
-      }
-    }
-
-    let animationFrameId;
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let particle of particles) {
-        particle.update();
-        particle.draw();
-      }
-      connect();
-      animationFrameId = requestAnimationFrame(animate);
-    }
-
-    // Resize handler
-    const handleResize = () => {
-      setCanvasSize();
-      init();
-    };
-    
-    window.addEventListener('resize', handleResize);
-
-    // Start animation
-    setCanvasSize();
-    init();
-    animate();
-
-    // Cleanup function
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-  return (
-    <>
-      {/* Custom Styles */}
-      <style>{`
-        /* Using Inter font (Assuming it's imported in your index.html or global CSS) */
-        /* If not, you might need to add the @import to your main CSS file */
-        
-        /* Fiery Particle Canvas */
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0.6;
-        }
-
-        /* Ember Flicker Animation for Hero Text */
-        @keyframes emberFlicker {
-            0%, 100% {
-                text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 69, 0, 0.5);
-            }
-            50% {
-                text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 69, 0, 0.8);
-            }
-        }
-        .animate-ember-flicker {
-            animation: emberFlicker 3s ease-in-out infinite alternate;
-        }
-
-        /* Base styles for the frosted glass elements */
-        .glass-card {
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 69, 0, 0.3);
-            transition: all 0.3s ease-in-out;
-        }
-        .glass-card:hover {
-            border-color: rgba(255, 69, 0, 0.7);
-            box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
-            transform: translateY(-8px);
-        }
-      `}</style>
-      
-      {/* Set body properties (optional, but good for ensuring bg color) */}
-      <div className="bg-black text-[#D3D3D3] overflow-x-hidden">
-        
-        {/* Fiery Particle Background */}
-        <canvas ref={canvasRef} id="particle-canvas"></canvas>
-
-        {/* Main Content (relative to canvas) */}
-        <div className="relative z-10">
-
-          {/* Your Nav Component */}
-          <Nav />
-
-          {/* ################### */}
-          {/* HERO SECTION    */}
-          {/* ################### */}
-          <main className="min-h-screen w-full flex items-center justify-center text-center px-4 relative overflow-hidden">
-            <div className="flex flex-col items-center gap-6 max-w-4xl pt-24"> {/* Added pt-24 to offset nav */}
-              
-              {/* Fiery Gradient Headline */}
-              <h1 className="text-6xl md:text-7xl lg:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#FFD700] via-[#FF4500] to-[#DC143C] animate-ember-flicker">
-                  RANBHOOMI
-              </h1>
-              <h2 className="text-3xl md:text-6xl lg:text-7xl font-bold fiery-gradient-text">
-                  Enter the battlefield, conquer with logic
-              </h2>
-
-              <p className="text-sm md:text-xl text-gray-400 max-w-2xl mt-4">
-                  This isn't just practice. This is Ranbhoomi. The ultimate proving ground for competitive programmers and interview-ready engineers.
-              </p>
-
-              {/* Aggressive CTA Button */}
-              <button 
-                  className="mt-8 px-10 py-4 bg-[#FF4500] text-black text-lg font-bold rounded-full
-                         flex items-center justify-center
-                         transform transition-all duration-300
-                         hover:bg-[#E03E00] hover:shadow-[0_0_25px_rgba(255,69,0,0.8)]
-                         hover:scale-105 hover:-rotate-1
-                         active:scale-95 active:rotate-0">
-                  Step onto the Battlefield
-              </button>
-            </div>
-          </main>
-
-          {/* FEATURES SECTION   */}
-          <section id="features" className="py-24 px-4">
-            <h2 className="text-4xl font-bold text-center mb-16 text-white">
-                Choose Your<span className="text-[#FF4500]"> Battlefield</span>
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
-                
-                {/* Feature 1: Practice */}
-                <a href="/practice" className="glass-card rounded-2xl p-6 flex flex-col items-center text-center">
-                    <svg className="w-12 h-12 text-[#FF4500] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    <h3 className="text-xl font-bold text-white mb-2">Practice</h3>
-                    <p className="text-sm text-gray-400">Hone your skills in the armory. Sort, search, and conquer a vast library of problems.</p>
-                </a>
-                
-                {/* Feature 2: Contests */}
-                <a href="/contests" className="glass-card rounded-2xl p-6 flex flex-col items-center text-center">
-                    <svg className="w-12 h-12 text-[#FF4500] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                    <h3 className="text-xl font-bold text-white mb-2">Contests</h3>
-                    <p className="text-sm text-gray-400">Prove your mettle. Compete against the best in high-stakes, real-time challenges.</p>
-                </a>
-                
-                {/* Feature 3: Interview */}
-                <a href="/interview" className="glass-card rounded-2xl p-6 flex flex-col items-center text-center">
-                    <svg className="w-12 h-12 text-[#FF4500] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12 12 0 0012 21.694a12 12 0 008.618-3.04A11.955 11.955 0 0112 2.944z"></path></svg>
-                    <h3 className="text-xl font-bold text-white mb-2">Interview</h3>
-                    <p className="text-sm text-gray-400">Prepare for war. Master company-specific questions and mock interviews.</p>
-                </a>
-
-                {/* Feature 4: Community */}
-                <a href="/community" className="glass-card rounded-2xl p-6 flex flex-col items-center text-center">
-                    <svg className="w-12 h-12 text-[#FF4500] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-1.657-1.343-3-3-3s-3 1.343-3 3v2m6 0H9"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20v-2a3 3 0 00-5.356-1.857M9 20H2v-2a3 3 0 015.356-1.857m0 0a3 3 0 010-4.286m0 4.286A3 3 0 009 20m0-8a3 3 0 100-6 3 3 0 000 6z"></path></svg>
-                    <h3 className="text-xl font-bold text-white mb-2">Community</h3>
-                    <p className="text-sm text-gray-400">Join the legions. Discuss strategies, form alliances, and learn from fellow warriors.</p>
-                </a>
-
-                {/* Feature 5: Roadmaps */}
-                <a href="/roadmaps" className="glass-card rounded-2xl p-6 flex flex-col items-center text-center">
-                    <svg className="w-12 h-12 text-[#FF4500] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
-                    <h3 className="text-xl font-bold text-white mb-2">Roadmaps</h3>
-                    <p className="text-sm text-gray-400">Chart your path to victory. Follow curated learning paths from novice to grandmaster.</p>
-                </a>
-            </div>
-          </section>
-
-
-          {/* "DAILY GAUNTLET" SECTION */}
-          <section id="gauntlet" className="py-24 px-4">
-              <div className="glass-card max-w-4xl mx-auto rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-                  <div className="text-center md:text-left">
-                      <h2 className="text-3xl md:text-4xl font-bold text-white">
-                          The Daily <span className="text-[#DC143C]">Gauntlet</span>
-                      </h2>
-                      <p className="text-lg text-gray-400 mt-2">A new challenge awaits. Prove your worth.</p>
-
-                      <div className="mt-6">
-                          <p className="text-xl font-semibold text-white">"Find Median from Data Stream"</p>
-                          <span className="inline-block bg-[#DC143C]/20 text-[#DC143C] text-sm font-bold px-3 py-1 rounded-full mt-2">
-                              Hard
-                          </span>
-                      </div>
-                  </div>
-                  
-                  <div className="flex-shrink-0">
-                      <button 
-                          className="px-8 py-3 bg-[#FF4500] text-black text-base font-bold rounded-full
-                                 transform transition-all duration-300
-                                 hover:bg-[#E03E00] hover:shadow-[0_0_20px_rgba(255,69,0,0.7)]
-                                 hover:scale-105">
-                          Solve Now
-                      </button>
-                  </div>
-              </div>
-          </section>
-
-          {/* FOOTER       */}
-          {/* <footer className="text-center py-12 px-4 border-t border-[#FF4500]/20">
-              <p className="text-gray-500">
-                  © 2025 Ranbhoomi. All rights reserved. Forged in fire.
-              </p>
-          </footer> */}
-
-          <Footer/>
-
-        </div>
-      </div>
-    </>
-  );
+    const updateMousePosition = (e) => setMousePosition({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", updateMousePosition);
+    return () => window.removeEventListener("mousemove", updateMousePosition);
+  }, []);
+  return mousePosition;
 }
 
-export default Home;
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+};
 
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+// --- COMPONENTS ---
+
+// 2. Bento Grid Item (The "Pro" Feature Card)
+const BentoItem = ({ children, className, title, icon }) => {
+  const mouse = useMousePosition();
+  // Simple spotlight logic would go here, simplified for React performance
+  return (
+    <motion.div 
+      variants={fadeInUp}
+      className={`relative group overflow-hidden rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-orange-500/30 transition-colors duration-500 ${className}`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      <div className="relative z-10 p-8 h-full flex flex-col">
+        <div className="mb-4 w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 text-xl group-hover:scale-110 transition-transform duration-300">
+            {icon}
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+        <div className="text-gray-400 text-sm leading-relaxed flex-grow">
+            {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// 3. Pricing Card (Keep your logic, improve visuals)
+const PricingCard = ({ title, price, features, icon, isRecommended, onBuy, userPlan }) => {
+  const isCurrent = userPlan === title;
+  
+  return (
+    <div className={`relative p-8 rounded-2xl border flex flex-col items-center transition-all duration-300 hover:scale-105 ${
+        isRecommended 
+        ? 'border-orange-500 bg-gradient-to-b from-orange-900/20 to-black shadow-[0_0_30px_rgba(255,69,0,0.2)]' 
+        : 'border-gray-800 bg-black/40'
+    }`}>
+      {isRecommended && (
+        <div className="absolute -top-4 bg-orange-600 text-white font-bold px-4 py-1 rounded-full text-xs uppercase tracking-wider shadow-lg">
+          Most Popular
+        </div>
+      )}
+      
+      <div className={`text-5xl mb-6 ${isRecommended ? 'text-orange-500' : 'text-gray-600'}`}>
+        {icon}
+      </div>
+
+      <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">{title}</h3>
+      <div className="mb-6 flex items-baseline">
+        <span className="text-4xl font-black text-white">₹{price}</span>
+        <span className="text-gray-500 ml-1">/mo</span>
+      </div>
+
+      <ul className="space-y-4 mb-8 w-full">
+        {features.map((f, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm">
+            {f.included ? (
+              <div className="p-1 rounded-full bg-green-500/20 text-green-500"><FaCheck size={10}/></div>
+            ) : (
+              <div className="p-1 rounded-full bg-gray-800 text-gray-600"><FaTimes size={10}/></div>
+            )}
+            <span className={!f.included ? 'text-gray-600' : 'text-gray-300'}>{f.text}</span>
+          </li>
+        ))}
+      </ul>
+
+      <button 
+        onClick={() => onBuy(title)}
+        disabled={isCurrent || price === 0}
+        className={`w-full py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
+            isCurrent 
+            ? 'bg-gray-800 text-gray-500 cursor-default border border-gray-700'
+            : isRecommended 
+                ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' 
+                : 'bg-white text-black hover:bg-gray-200'
+        }`}
+      >
+        {isCurrent ? "Active Plan" : price === 0 ? "Get Started" : "Upgrade Now"}
+      </button>
+    </div>
+  );
+};
+
+// --- MAIN PAGE ---
+
+const Home = () => {
+  const { userData } = useSelector(state => state.user);
+
+  // Razorpay Handler
+  const handlePayment = async (planType, price) => {
+    if (price === 0) return toast.info("Free plan active!");
+    if (!userData) return toast.error("Log in to upgrade!");
+
+    try {
+        const { data: order } = await axios.post(`${serverUrl}/api/payment/create-order`, { planType }, { withCredentials: true });
+        const options = {
+            key: order.keyId,
+            amount: order.amount,
+            currency: order.currency,
+            name: "Ranbhoomi",
+            description: `Ranbhoomi ${planType}`,
+            order_id: order.orderId,
+            handler: async (response) => {
+                try {
+                    const res = await axios.post(`${serverUrl}/api/payment/verify-payment`, {
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        planType: planType
+                    }, { withCredentials: true });
+                    if (res.data.success) {
+                        toast.success(`Welcome to ${planType}!`);
+                        window.location.reload(); 
+                    }
+                } catch (err) { toast.error("Verification failed."); }
+            },
+            theme: { color: "#ea580c" }
+        };
+        new window.Razorpay(options).open();
+    } catch (err) { toast.error("Payment failed."); }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#030303] text-white selection:bg-orange-500 selection:text-white font-sans overflow-x-hidden">
+      
+      {/* ================= 1. HERO SECTION (Professional & Deep) ================= */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-4 border-b border-white/5 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))]">
+        
+        {/* Subtle Grid Background */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+        
+        {/* Spotlights */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/20 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-600/10 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+
+        <div className="relative z-10 max-w-5xl mx-auto text-center">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.8 }}
+            >
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-default">
+                    <span className="flex h-2 w-2 rounded-full bg-orange-500"></span>
+                    <span className="text-xs font-medium text-gray-300 tracking-wide">V2.0 NOW LIVE</span>
+                </div>
+
+                <h1 className="text-7xl md:text-9xl font-black tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-gray-500">
+                    RAN<span className="text-orange-600">BHOOMI</span>
+                </h1>
+
+                <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                    The modern battleground for engineering excellence. <br className="hidden md:block"/>
+                    Solve, compete, and debug your way to the top.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <Link to="/signup" className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:scale-105 transition-transform">
+                            Start Coding
+                        </button>
+                    </Link>
+                    <Link to="/premium" className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto px-8 py-4 bg-black border border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-colors">
+                            View Plans
+                        </button>
+                    </Link>
+                </div>
+            </motion.div>
+        </div>
+
+        {/* Stats Strip */}
+        <div className="absolute bottom-0 w-full border-t border-white/5 bg-black/20 backdrop-blur-sm py-6">
+            <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center md:justify-between gap-8 text-center md:text-left">
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">100K+</span>
+                    <span className="text-xs text-gray-500 uppercase tracking-widest">Submissions</span>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">50+</span>
+                    <span className="text-xs text-gray-500 uppercase tracking-widest">Partner Companies</span>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">99.9%</span>
+                    <span className="text-xs text-gray-500 uppercase tracking-widest">Uptime</span>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">24/7</span>
+                    <span className="text-xs text-gray-500 uppercase tracking-widest">AI Support</span>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      {/* ================= 2. BENTO GRID FEATURES ================= */}
+      <section className="py-32 px-4 bg-[#030303]">
+        <div className="max-w-7xl mx-auto">
+            <div className="mb-20">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">Forged for <span className="text-orange-600">Performance</span>.</h2>
+                <p className="text-gray-400 text-lg max-w-2xl">
+                    We've dismantled the traditional LMS and rebuilt it as a high-performance engine for developers.
+                </p>
+            </div>
+
+            <motion.div 
+                initial="hidden" 
+                whileInView="visible" 
+                viewport={{ once: true }} 
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-4 h-auto md:h-[600px]"
+            >
+                {/* Large Item (Span 2 cols, full height on mobile) */}
+                <BentoItem 
+                    className="md:col-span-2 md:row-span-2 bg-gradient-to-br from-[#0a0a0a] to-[#0f0f0f]"
+                    title="Intelligent AI Sensei"
+                    icon={<FaBrain />}
+                >
+                    <p className="mb-6">Forget static hints. Our AI analyzes your specific code logic, identifies the flaw in your algorithm, and nudges you toward the solution without revealing it.</p>
+                    {/* Visual representation of chat */}
+                    <div className="w-full h-full bg-[#050505] rounded-xl border border-white/5 p-4 flex flex-col gap-3 opacity-80">
+                        <div className="self-end bg-blue-600/20 text-blue-200 px-3 py-2 rounded-lg text-xs max-w-[80%]">Why is my DP failing?</div>
+                        <div className="self-start bg-orange-600/10 text-orange-200 px-3 py-2 rounded-lg text-xs max-w-[80%]">You are recalculating subproblems. Try memoizing the `fib(n-2)` call.</div>
+                        <div className="self-end bg-blue-600/20 text-blue-200 px-3 py-2 rounded-lg text-xs max-w-[80%]">Fixed it! O(n) now.</div>
+                    </div>
+                </BentoItem>
+
+                {/* Standard Item */}
+                <BentoItem 
+                    className="md:col-span-1 md:row-span-1"
+                    title="Cloud IDE"
+                    icon={<FaTerminal />}
+                >
+                    A Monaco-based editor supporting 20+ languages. Pre-configured with test runners and linting.
+                </BentoItem>
+
+                {/* Standard Item */}
+                <BentoItem 
+                    className="md:col-span-1 md:row-span-1"
+                    title="Ranked Leagues"
+                    icon={<FaTrophy />}
+                >
+                    Weekly contests that affect your global ELO. Climb from Iron to Challenger tier.
+                </BentoItem>
+            </motion.div>
+
+            {/* Bottom Row of Features */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                 <BentoItem title="Mock Interviews" icon={<FaUserNinja />} className="h-64">
+                    Peer-to-peer live coding sessions with video and shared whiteboard.
+                 </BentoItem>
+                 <BentoItem title="System Design" icon={<FaCode />} className="h-64">
+                    Drag-and-drop architecture labs to prepare for HLD interviews.
+                 </BentoItem>
+                 <BentoItem title="Company Tags" icon={<FaCrown />} className="h-64">
+                    Target specific FAANG companies with curated problem sets.
+                 </BentoItem>
+            </div>
+        </div>
+      </section>
+
+      {/* ================= 3. PRICING ================= */}
+      <section className="py-32 px-4 border-t border-white/5 bg-[#030303]">
+        <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-20">
+                <h2 className="text-4xl font-bold mb-4">Transparent Pricing</h2>
+                <p className="text-gray-400">Invest in your career for less than the price of a coffee.</p>
+            </div>
+
+      <div className="grid lg:grid-cols-3 gap-8 max-w-7xl w-full px-4">
+        {/* SCOUT (Free) */}
+        <PricingCard 
+          title="Free" 
+          price={0} 
+          icon={<FaUserNinja />}
+          userPlan={userData?.subscriptionPlan}
+          onBuy={() => {}}
+          features={[
+            { text: "3 AI Hints / Day", included: true },
+            { text: "Participate in Public Contests", included: true },
+            { text: "Standard Problem Set", included: true },
+            { text: "Company Tags", included: false },
+            { text: "Mock Interviews", included: false },
+          ]}
+        />
+
+        {/* WARRIOR */}
+        <PricingCard 
+          title="Warrior" 
+          price={499} 
+          icon={<FaRobot />}
+          isRecommended={true}
+          userPlan={userData?.subscriptionPlan}
+          onBuy={handlePayment}
+          features={[
+            { text: "Unlimited AI Assistant", included: true },
+            { text: "Company Tags (Amazon/Google)", included: true },
+            { text: "Premium Problem Archive", included: true },
+            { text: "5 Peer Mock Interviews / Mo", included: true },
+            { text: "Host Private Contests", included: false },
+          ]}
+        />
+
+        {/* GLADIATOR */}
+        <PricingCard 
+          title="Gladiator" 
+          price={999} 
+          icon={<FaCrown />}
+          userPlan={userData?.subscriptionPlan}
+          onBuy={handlePayment}
+          features={[
+            { text: "Everything in Warrior", included: true },
+            { text: "Host Private Contests", included: true },
+            { text: "Unlimited Mock Interviews", included: true },
+            { text: "Video Solutions", included: true },
+            { text: "Legendary Profile Badge", included: true },
+          ]}
+        />
+      </div>
+        </div>
+      </section>
+
+      {/* ================= 4. PROFESSIONAL CTA ================= */}
+      <section className="py-20 px-4">
+        <div className="max-w-5xl mx-auto bg-gradient-to-r from-orange-900/40 to-black border border-orange-500/20 rounded-3xl p-12 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                <FaFireAlt size={300} />
+            </div>
+            
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 relative z-10">Stop Preparing. Start Fighting.</h2>
+            <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto relative z-10">
+                Join 25,000+ developers who have already leveled up their careers with Ranbhoomi.
+            </p>
+            <Link to="/signup" className="relative z-10">
+                <button className="px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-gray-100 transition-colors">
+                    Join the Ranks
+                </button>
+            </Link>
+        </div>
+      </section>
+
+      {/* ================= 5. FOOTER ================= */}
+      <footer className="bg-[#050505] pt-20 pb-10 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
+            <div className="col-span-2 md:col-span-1">
+                <div className="flex items-center gap-2 mb-4">
+                    <FaFireAlt className="text-orange-600 text-2xl" />
+                    <span className="font-bold text-xl tracking-tighter">RANBHOOMI</span>
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                    The ultimate platform for competitive programming and technical interview preparation.
+                </p>
+            </div>
+            
+            <div>
+                <h4 className="font-bold text-white mb-6">Platform</h4>
+                <ul className="space-y-3 text-sm text-gray-500">
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Problems</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Contests</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Leaderboard</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Pricing</li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 className="font-bold text-white mb-6">Company</h4>
+                <ul className="space-y-3 text-sm text-gray-500">
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">About Us</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Careers</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Blog</li>
+                    <li className="hover:text-orange-500 cursor-pointer transition-colors">Privacy Policy</li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 className="font-bold text-white mb-6">Connect</h4>
+                <div className="flex gap-4">
+                    <SocialIcon icon={<FaTwitter />} />
+                    <SocialIcon icon={<FaGithub />} />
+                    <SocialIcon icon={<FaDiscord />} />
+                    <SocialIcon icon={<FaYoutube />} />
+                </div>
+            </div>
+        </div>
+        <div className="text-center text-gray-600 text-sm pt-8 border-t border-white/5">
+            &copy; 2026 Ranbhoomi Inc. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+const SocialIcon = ({ icon }) => (
+    <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-orange-600 hover:text-white transition-all">
+        {icon}
+    </a>
+)
+
+export default Home;

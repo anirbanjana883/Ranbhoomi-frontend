@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import { serverUrl } from "../../App";
+import toast from "react-hot-toast"; // 🔥 Updated to hot-toast
 import {
   FaPaperPlane,
   FaRobot,
@@ -8,7 +7,8 @@ import {
   FaBolt,
 } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
-import { toast } from "react-toastify";
+
+import API from "../../api/axios.js";
 
 // Plan Limits (Must match Backend)
 const PLAN_LIMITS = {
@@ -22,12 +22,12 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: `**System Online.** I am **Bhoomi**, your Technical Commander. \n\nI have analyzed the problem parameters for *"${problem.title}"*. \n\nWhat is your implementation strategy?`,
+      text: `**System Online.** I am **Bhoomi AI**.\n\nI have analyzed the problem parameters for *"${problem.title}"*. \n\nHow can I assist you with your implementation?`,
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [credits, setCredits] = useState(null); // Starts null, but we fetch it immediately
+  const [credits, setCredits] = useState(null); 
   const messagesEndRef = useRef(null);
 
   // 2. Auto-scroll to bottom
@@ -35,34 +35,31 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 3. NEW: Fetch Credits on Mount (Fixes the "Hidden Badge" issue)
+  // 3. Fetch Credits on Mount
   useEffect(() => {
     const fetchUserCredits = async () => {
       try {
-        const { data } = await axios.get(`${serverUrl}/api/user/getcurrentuser`, {
-          withCredentials: true,
-        });
+        const { data } = await API.get(`/user/getcurrentuser`);
+        
+        // Handle ApiResponse wrapper
+        const user = data?.data?.user || data?.data || data?.user;
 
-        if (data && data.user) {
-          const user = data.user;
-          // Calculate remaining credits locally based on user data
+        if (user) {
           const plan = user.subscriptionPlan || "Free";
           const limit = PLAN_LIMITS[plan] || 3;
           const used = user.aiUsage?.count || 0;
           
-          // Check if usage needs reset (Frontend estimation to prevent ugly numbers)
           const lastUsed = new Date(user.aiUsage?.lastUsed || Date.now()).toDateString();
           const today = new Date().toDateString();
           
           if (lastUsed !== today) {
-             setCredits(limit); // It will reset on next backend call anyway
+             setCredits(limit); 
           } else {
              setCredits(Math.max(0, limit - used));
           }
         }
       } catch (error) {
         console.error("Failed to fetch credits:", error);
-        // Fallback: don't show badge or show 0
       }
     };
 
@@ -80,29 +77,29 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
     setLoading(true);
 
     try {
-      const { data } = await axios.post(
-        `${serverUrl}/api/ai/ask`,
-        {
-          problemTitle: problem.title,
-          problemDescription: problem.description,
-          userCode: userCode,
-          userQuestion: userMsg,
-        },
-        { withCredentials: true }
-      );
+      const { data } = await API.post(`/ai/ask`, {
+        problemTitle: problem.title,
+        problemDescription: problem.description,
+        userCode: userCode,
+        userQuestion: userMsg,
+      });
 
-      setMessages((prev) => [...prev, { role: "ai", text: data.reply }]);
+      // Handle ApiResponse wrapper
+      const responseData = data?.data || data;
+
+      setMessages((prev) => [...prev, { role: "ai", text: responseData.reply }]);
       
-      // Update credits from the accurate backend response
-      if (data.remaining !== undefined) setCredits(data.remaining);
+      if (responseData.remaining !== undefined) setCredits(responseData.remaining);
 
     } catch (err) {
-      if (err.response?.status === 403 && err.response?.data?.limitReached) {
+      const errorData = err.response?.data?.data || err.response?.data;
+
+      if (err.response?.status === 403 && errorData?.limitReached) {
         setMessages((prev) => [
           ...prev,
           {
             role: "ai",
-            text: "🛑 **Daily Limit Reached.**\n\nYou have exhausted your spiritual energy for today. Upgrade to Premium for unlimited guidance.",
+            text: "🛑 **Daily Limit Reached.**\n\nYou have exhausted your AI queries for today. Upgrade to Premium for unlimited guidance.",
           },
         ]);
         setCredits(0);
@@ -110,7 +107,7 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
         toast.error("AI connection failed.");
         setMessages((prev) => [
           ...prev,
-          { role: "ai", text: "Connection disrupted. The oracle is silent." },
+          { role: "ai", text: "Connection disrupted. Please try again later." },
         ]);
       }
     } finally {
@@ -119,23 +116,23 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
   };
 
   return (
-    <div className="fixed bottom-20 right-6 w-96 h-[550px] bg-black/90 border border-orange-600/50 rounded-xl shadow-[0_0_40px_rgba(255,69,0,0.3)] flex flex-col z-50 backdrop-blur-md animate-in slide-in-from-bottom-5 fade-in duration-300 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-zinc-950 font-sans">
       {/* --- Header --- */}
-      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-900/40 to-black border-b border-orange-800/30">
-        <div className="flex items-center gap-2 text-orange-400 font-bold">
-          <div className="p-1.5 bg-orange-600/20 rounded-lg border border-orange-500/30">
-            <FaRobot />
+      <div className="flex items-center justify-between p-3.5 bg-zinc-900 border-b border-zinc-800">
+        <div className="flex items-center gap-2.5 text-zinc-100 font-bold text-sm">
+          <div className="p-1.5 bg-red-500/10 text-red-500 rounded-md border border-red-500/20">
+            <FaRobot size={14}/>
           </div>
-          <span>Bhoomi AI</span>
+          <span className="tracking-wide">Bhoomi AI</span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Credit Counter - Now shows "..." if loading, then the number */}
+          {/* Credit Counter */}
           <div
-            className={`flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-full border ${
+            className={`flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${
               credits !== null && credits > 0
-                ? "text-green-400 border-green-900 bg-green-900/20"
-                : "text-red-400 border-red-900 bg-red-900/20"
+                ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/10"
+                : "text-red-400 border-red-500/20 bg-red-500/10"
             }`}
           >
             <FaBolt size={10} />
@@ -148,31 +145,29 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
 
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition"
+            className="text-zinc-500 hover:text-zinc-200 transition-colors p-1"
           >
-            <FaTimes />
+            <FaTimes size={14}/>
           </button>
         </div>
       </div>
 
       {/* --- Messages Area --- */}
-      <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-orange-900/30 scrollbar-track-black/20">
+      <div className="flex-grow overflow-y-auto p-4 space-y-5 custom-scrollbar bg-zinc-950">
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] p-3 rounded-xl text-xs leading-relaxed shadow-sm ${
+              className={`max-w-[85%] p-3 text-xs leading-relaxed shadow-sm ${
                 msg.role === "user"
-                  ? "bg-orange-700 text-white rounded-br-none border border-orange-600"
-                  : "bg-gray-900 text-gray-200 rounded-bl-none border border-gray-700/60"
+                  ? "bg-zinc-800 text-zinc-100 rounded-xl rounded-tr-sm border border-zinc-700"
+                  : "bg-zinc-900 text-zinc-300 rounded-xl rounded-tl-sm border border-zinc-800"
               }`}
             >
               {msg.role === "ai" ? (
-                <div className="prose prose-invert prose-xs max-w-none">
+                <div className="prose prose-invert prose-xs max-w-none prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800">
                   <ReactMarkdown>{msg.text}</ReactMarkdown>
                 </div>
               ) : (
@@ -184,10 +179,10 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-900 p-3 rounded-xl rounded-bl-none border border-gray-700/60 flex items-center gap-2">
-              <FaRobot className="text-orange-500 animate-pulse" />
-              <span className="text-gray-400 text-xs italic">
-                Analyzing tactics...
+            <div className="bg-zinc-900 p-3 rounded-xl rounded-tl-sm border border-zinc-800 flex items-center gap-2 shadow-sm">
+              <FaRobot className="text-red-500 animate-pulse" size={14}/>
+              <span className="text-zinc-400 text-xs font-medium italic tracking-wide">
+                Thinking...
               </span>
             </div>
           </div>
@@ -196,28 +191,25 @@ const AIChatPanel = ({ onClose, problem, userCode }) => {
       </div>
 
       {/* --- Input Area --- */}
-      <form
-        onSubmit={handleSend}
-        className="p-3 bg-black/40 border-t border-orange-900/30"
-      >
-        <div className="relative">
+      <form onSubmit={handleSend} className="p-3 bg-zinc-900 border-t border-zinc-800 shrink-0">
+        <div className="relative flex items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask for a hint or logic check..."
-            className="w-full bg-gray-900 text-white border border-gray-700 rounded-lg py-3 pl-4 pr-12 text-xs focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all placeholder-gray-600"
+            className="w-full bg-zinc-950 text-zinc-100 border border-zinc-800 rounded-md py-2.5 pl-3 pr-10 text-xs focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder-zinc-600 shadow-inner"
           />
           <button
             type="submit"
             disabled={loading || !input.trim() || (credits !== null && credits <= 0)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-orange-600 text-white rounded-md hover:bg-orange-500 disabled:opacity-50 disabled:bg-gray-700 transition-colors"
+            className="absolute right-1 top-1 bottom-1 px-3 flex items-center justify-center bg-zinc-800 text-zinc-300 rounded hover:bg-zinc-700 hover:text-white disabled:opacity-50 disabled:bg-transparent disabled:text-zinc-600 transition-colors"
           >
             <FaPaperPlane size={12} />
           </button>
         </div>
-        <div className="text-[10px] text-gray-600 mt-2 text-center">
-          Bhoomi AI can make mistakes. Use your own judgment, warrior.
+        <div className="text-[9px] font-medium text-zinc-500 mt-2 text-center uppercase tracking-widest">
+          AI can make mistakes. Verify before submitting.
         </div>
       </form>
     </div>

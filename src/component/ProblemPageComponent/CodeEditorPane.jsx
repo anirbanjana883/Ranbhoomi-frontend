@@ -13,7 +13,7 @@ import { dracula } from '@uiw/codemirror-theme-dracula';
 import { githubDark } from '@uiw/codemirror-theme-github';
 
 // Icons
-import { FaSyncAlt, FaCog, FaBrain } from 'react-icons/fa';
+import { FaSyncAlt, FaCog } from 'react-icons/fa';
 
 function CodeEditorPane({
   problem,
@@ -28,13 +28,13 @@ function CodeEditorPane({
   const [themeName, setThemeName] = useState("vscode");
   const [showSettings, setShowSettings] = useState(false);
 
-  // --- Styles ---
-  const paneHeaderStyle = `flex-none p-3 px-4 text-sm font-semibold text-gray-400 border-b-2 border-orange-800/60 bg-gradient-to-t from-black/60 to-gray-950/60 backdrop-blur-sm flex justify-between items-center z-20`;
-  const iconButtonStyle = `p-2 rounded-full bg-black/40 border border-gray-700/50 text-orange-500 transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-black shadow-sm hover:text-orange-400 hover:border-orange-600/60 hover:bg-orange-900/20 hover:shadow-[0_0_15px_rgba(255,100,0,0.3)] hover:scale-110 hover:-translate-y-0.5`;
+  // --- Styles  ---
+  const paneHeaderStyle = `flex-none p-2 px-4 text-sm font-medium border-b border-zinc-800 bg-zinc-950 flex justify-between items-center z-20`;
+  const iconButtonStyle = `p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-zinc-700`;
   
   // --- Helper: Get Extensions ---
   const extensions = useMemo(() => {
-    switch (selectedLanguage.toLowerCase()) {
+    switch (selectedLanguage?.toLowerCase()) {
       case 'javascript': return [javascript({ jsx: true })];
       case 'python': return [python()];
       case 'java': return [java()];
@@ -55,15 +55,14 @@ function CodeEditorPane({
   };
 
   return (
-    // Use a fragment here, but ensure parent is a flex container
     <>
-      {/* Header Section (flex-none prevents it from shrinking/growing) */}
+      {/* Header Section */}
       <div className={paneHeaderStyle}>
         <div className="flex gap-2">
           <select
             value={selectedLanguage}
             onChange={handleLanguageChange}
-            className="bg-gray-800/50 border border-gray-700/80 text-white text-xs rounded px-2 py-1 focus:outline-none focus:border-orange-600/80 focus:ring-1 focus:ring-orange-600/50 appearance-none shadow-inner cursor-pointer"
+            className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-md px-2.5 py-1 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 appearance-none cursor-pointer hover:border-zinc-600 transition-colors"
           >
             {problem?.starterCode?.map((sc) => (
               <option key={sc.language} value={sc.language}>
@@ -73,7 +72,7 @@ function CodeEditorPane({
           </select>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button onClick={resetCode} title="Reset Code" className={iconButtonStyle}>
             <FaSyncAlt size={12} />
           </button>
@@ -83,31 +82,31 @@ function CodeEditorPane({
             <button 
                 onClick={() => setShowSettings(!showSettings)} 
                 title="Editor Settings" 
-                className={`${iconButtonStyle} ${showSettings ? 'bg-orange-900/40 border-orange-600' : ''}`}
+                className={`${iconButtonStyle} ${showSettings ? 'bg-zinc-800 text-zinc-200' : ''}`}
             >
-                <FaCog size={12} />
+                <FaCog size={14} />
             </button>
 
             {/* --- SETTINGS DROPDOWN MENU --- */}
             {showSettings && (
-            <div className="absolute top-8 right-0 z-50 w-64 bg-[#1e1e1e] border border-orange-700/50 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.8)] p-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
-                    <h3 className="text-orange-400 text-xs font-bold uppercase tracking-wider">Editor Settings</h3>
-                    <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white text-xs">✕</button>
+            <div className="absolute top-8 right-0 z-50 w-64 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center mb-3 pb-2 border-b border-zinc-800">
+                    <h3 className="text-zinc-200 text-xs font-bold uppercase tracking-wider">Editor Settings</h3>
+                    <button onClick={() => setShowSettings(false)} className="text-zinc-500 hover:text-white text-xs">✕</button>
                 </div>
                 
                 {/* Theme Select */}
                 <div className="mb-4">
-                    <label className="text-gray-400 text-xs block mb-1.5 font-medium">Theme</label>
+                    <label className="text-zinc-400 text-xs block mb-1.5 font-medium">Theme</label>
                     <div className="grid grid-cols-1 gap-2">
                         {['vscode', 'dracula', 'github'].map((t) => (
                             <button
                                 key={t}
                                 onClick={() => setThemeName(t)}
-                                className={`text-left px-3 py-2 text-xs rounded border transition-all ${
+                                className={`text-left px-3 py-1.5 text-xs rounded-md border transition-all ${
                                     themeName === t 
-                                    ? 'bg-orange-600/20 border-orange-500 text-orange-300' 
-                                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700'
+                                    ? 'bg-red-500/10 border-red-500/50 text-red-400 font-medium' 
+                                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                                 }`}
                             >
                                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -118,14 +117,14 @@ function CodeEditorPane({
 
                 {/* Font Size Slider */}
                 <div>
-                    <div className="flex justify-between text-xs mb-1">
-                        <label className="text-gray-400 font-medium">Font Size</label>
-                        <span className="text-orange-400 font-mono">{fontSize}px</span>
+                    <div className="flex justify-between text-xs mb-1.5">
+                        <label className="text-zinc-400 font-medium">Font Size</label>
+                        <span className="text-red-400 font-mono">{fontSize}px</span>
                     </div>
                     <input 
                         type="range" min="12" max="24" step="1" value={fontSize} 
                         onChange={(e) => setFontSize(parseInt(e.target.value))}
-                        className="w-full accent-orange-500 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        className="w-full accent-red-500 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                     />
                 </div>
             </div>
@@ -135,7 +134,6 @@ function CodeEditorPane({
       </div>
 
       {/* Editor Section */}
-      {/* FIX: flex-1 ensures it takes remaining space. min-h-0 allows scrolling. relative handles internal absolute pos. */}
       <div 
         className="flex-1 min-h-0 relative overflow-hidden bg-[#1e1e1e]"
         style={{ fontSize: `${fontSize}px` }}
@@ -143,14 +141,14 @@ function CodeEditorPane({
         <div className="absolute inset-0">
             <CodeMirror
             value={code}
-            height="100%" // Important!
+            height="100%" 
             width="100%"
             theme={getTheme()} 
             extensions={extensions}
-            onChange={(value, viewUpdate) => {
+            onChange={(value) => {
                 handleEditorChange(value);
             }}
-            className="h-full" // Tailwind height full
+            className="h-full custom-scrollbar"
             basicSetup={{
                 lineNumbers: true,
                 highlightActiveLineGutter: true,

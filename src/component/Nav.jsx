@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import logo from "../assets/logo.png"; // Assuming this is your ranbhoomi logo
+import logo from "../assets/logo.png"; 
 import { FaCode, FaUserCircle } from "react-icons/fa";
 import { GrTrophy } from "react-icons/gr";
 import { FaClipboardList, FaUsers } from "react-icons/fa6";
@@ -9,9 +9,8 @@ import { GiTireIronCross } from "react-icons/gi";
 import { TbLogout } from "react-icons/tb";
 import { IoPersonCircleSharp } from "react-icons/io5";
 import { FaCrown } from "react-icons/fa"; 
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom"; // 1. Import useLocation
 import { serverUrl } from "../App";
 import { setUserData } from "../redux/userSlice";
 import { toast } from "react-toastify";
@@ -19,18 +18,18 @@ import axios from "axios";
 
 // Define navigation links with icons
 const navLinks = [
-  { title: "Practice", path: "/practice", icon: <FaCode size={18} /> },
-  { title: "Contests", path: "/contests", icon: <GrTrophy size={18} /> },
-  { title: "Interview", path: "/interview", icon: <FaClipboardList size={18} /> },
-  { title: "Community", path: "/community", icon: <FaUsers size={18} /> },
-  { title: "Roadmaps", path: "/roadmaps", icon: <FaMapSigns size={18} /> },
+  { title: "Practice", path: "/practice", icon: <FaCode size={16} /> },
+  { title: "Contests", path: "/contests", icon: <GrTrophy size={16} /> },
+  { title: "Interview", path: "/interview", icon: <FaClipboardList size={16} /> },
+  { title: "Community", path: "/community", icon: <FaUsers size={16} /> },
+  { title: "Roadmaps", path: "/roadmaps", icon: <FaMapSigns size={16} /> },
 ];
 
 function Nav() {
   const { userData } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const location = useLocation(); // 2. Get location hook
+  const location = useLocation(); 
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showHam, setShowHam] = useState(false);
   const profileRef = useRef(null);
@@ -60,7 +59,7 @@ function Nav() {
       toast.success("Logout Successfully");
     } catch (error) {
       console.log(error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Logout failed");
     }
   };
 
@@ -69,285 +68,258 @@ function Nav() {
     setShowHam(false);
   };
 
-  // --- 3. UPDATED STYLES ---
+  // --- PREMIUM FROSTED GLASS STYLES ---
 
-  // Base style for all glass islands
-const glassIslandStyle = `
-    bg-orange-1000/30       /* <-- Adjust this: More orange, more opaque for frosted look */
-    backdrop-blur-xl       /* <-- Keep blur, maybe increase if desired */
-    border border-orange-600/60 /* <-- Adjust: Stronger orange border */
-    shadow-[0_0_25px_rgba(255,100,0,0.3)] /* <-- Adjust: Default glow is more orange and present */
-    transition-all duration-300 ease-in-out transform
-    hover:shadow-[0_0_45px_rgba(255,100,0,0.5)] hover:border-orange-500/80 /* <-- Adjust: Hover glow is stronger */
+  // Ultra-sleek glassy floating island
+  const glassIslandStyle = `
+    bg-zinc-950/40 backdrop-blur-xl 
+    border border-white/10 
+    shadow-[0_8px_32px_rgba(0,0,0,0.5)]
+    transition-all duration-300
   `;
 
-  // Style for links (not active)
- const commonLinkStyles = `
-    flex items-center gap-1.5 px-4 py-2 rounded-full font-medium 
-    text-orange-200       /* <-- Adjust: Default text color for frosted look */
-    bg-transparent        /* <-- Ensure background is transparent to see glass */
-    transition-all duration-300 transform
-    hover:text-orange-100 hover:bg-orange-800/40 hover:-translate-y-0.5 cursor-pointer /* <-- Adjust hover state */
+  // Standard Link (Glass hover effect)
+  const commonLinkStyles = `
+    flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm
+    text-zinc-300 bg-transparent 
+    transition-all duration-200
+    hover:text-white hover:bg-white/10 hover:shadow-sm cursor-pointer
   `;
   
-  // Style for the currently active link
-const activeLinkStyles = `
-    flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold 
-    text-orange-50         /* <-- Adjust: Highlighted text color */
-    bg-orange-900/60        /* <-- Adjust: More opaque active background */
-    border border-orange-500/80 /* <-- Adjust: Stronger active border */
-    shadow-[0_0_20px_rgba(255,100,0,0.5),inset_0_1px_3px_rgba(255,100,0,0.3)] /* <-- Adjust: Stronger active glow */
-    cursor-pointer -translate-y-0.5
+  // Active Link (Frosted active state with TUF Red Accent)
+  const activeLinkStyles = `
+    flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm
+    text-red-400 bg-white/10 
+    border border-white/5 
+    shadow-inner cursor-pointer
   `;
 
-  // Mobile link styles (unchanged)
+  // Mobile link styles 
   const mobileLinkStyles =
-    "flex items-center gap-4 text-3xl font-bold text-[#D3D3D3] transition-all duration-300 transform hover:text-[#FF4500] hover:scale-105";
+    "flex items-center gap-4 text-2xl font-semibold text-zinc-300 transition-colors duration-200 hover:text-white";
 
-    // --- HELPER: Dynamic Premium Ring Styles ---
+  // --- HELPER: Dynamic Premium Ring Styles ---
   const getProfileStyles = (plan) => {
     switch (plan) {
       case "Gladiator":
-        return "border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)] bg-yellow-900/20"; // Gold
+        return "border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] bg-amber-500/10 text-amber-400"; 
       case "Warrior":
-        return "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.6)] bg-red-900/20"; // Red
+        return "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] bg-red-500/10 text-red-400"; 
       default: 
-        return "border-orange-600/60 shadow-[0_0_25px_rgba(255,100,0,0.3)] bg-orange-1000/30"; // Orange
+        return "border-white/10 bg-white/5 text-zinc-200 hover:border-white/20 hover:bg-white/10"; 
     }
   };
 
   const profileRingClass = userData 
     ? getProfileStyles(userData.subscriptionPlan)
-    : "border-orange-600/60 shadow-[0_0_25px_rgba(255,100,0,0.3)] bg-orange-1000/30";
+    : "border-white/10 bg-white/5 text-zinc-200 hover:border-white/20 hover:bg-white/10";
 
   return (
     <>
-      {/* ####### Desktop: Frosted Glass Dynamic Island (NEW STRUCTURE) ####### */}
-      <div
-        className="hidden lg:flex fixed top-3 left-0 w-full z-50 p-4 justify-center items-center"
-      >
-        {/* Left: Logo Circle */}
-        <div className="pr-4">
-          <img
-            src={logo}
-            alt="Ranbhoomi Logo"
-            className={`w-14 h-14 rounded-full cursor-pointer p-1 ${glassIslandStyle} hover:scale-110`}
+      {/* ####### Desktop: Frosted Glass Navbar ####### */}
+      <div className="hidden lg:flex fixed top-5 left-0 w-full z-50 px-6 justify-center items-center pointer-events-none">
+        
+        <div className="flex items-center gap-4 pointer-events-auto">
+          {/* Left: Logo Box */}
+          <div 
             onClick={() => navigate("/")}
-          />
-        </div>
-
-        {/* Center: Nav Island */}
-        <nav
-          className={`flex items-center gap-2 p-2 rounded-full ${glassIslandStyle} hover:scale-[1.01]`}
-        >
-          {navLinks.map((link) => (
-            <button
-              key={link.title}
-              onClick={() => navigate(link.path)}
-              // 4. Apply conditional styling
-              className={
-                location.pathname.startsWith(link.path)
-                  ? activeLinkStyles
-                  : commonLinkStyles
-              }
-            >
-              {React.cloneElement(link.icon, {
-                className: location.pathname.startsWith(link.path) ? 'text-orange-400' : ''
-              })}
-              <span className="text-sm">{link.title}</span>
-            </button>
-          ))}
-
-          {/* --- PREMIUM UPGRADE BUTTONS --- */}
-          {userData && (
-            <>
-              <div className="w-px h-6 bg-orange-500/30 mx-1"></div>
-              
-              {/* Go Pro Button (Free Plan) */}
-              {userData.subscriptionPlan === "Free" && (
-                <button
-                  onClick={() => navigate("/premium")}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-orange-600 to-red-600 hover:scale-105 transition-transform shadow-[0_0_15px_rgba(255,69,0,0.4)]"
-                >
-                  <FaCrown className="text-yellow-300" /> Go Pro
-                </button>
-              )}
-
-              {/* Status Badge (Paid Plans) */}
-              {userData.subscriptionPlan !== "Free" && (
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-black/40 ${
-                  userData.subscriptionPlan === "Gladiator" ? "border-yellow-500/50 text-yellow-400" : "border-red-500/50 text-red-400"
-                }`}>
-                  <FaCrown size={12} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{userData.subscriptionPlan}</span>
-                </div>
-              )}
-            </>
-          )}
-        </nav>
-
-        {/* Right: Profile Circle (Dynamic Color) */}
-        <div className="relative pl-4" ref={profileRef}>
-          <div
-            className={`w-14 h-14 rounded-full cursor-pointer flex items-center justify-center overflow-hidden border backdrop-blur-xl transition-all duration-300 hover:scale-110 ${profileRingClass}`}
-            onClick={() => setShowProfileDropdown((prev) => !prev)}
+            className={`w-12 h-12 rounded-xl cursor-pointer flex items-center justify-center ${glassIslandStyle} hover:bg-zinc-950/60`}
           >
-            {userData?.photoUrl ? (
-              <img src={userData.photoUrl} alt="profile" className="w-full h-full object-cover" />
-            ) : userData ? (
-              <div className="w-full h-full rounded-full text-white flex items-center justify-center text-2xl font-bold bg-orange-900/60">
-                {userData.name.slice(0, 1).toUpperCase()}
-              </div>
-            ) : (
-              <IoPersonCircleSharp className="w-10 h-10 text-orange-500/70 hover:text-orange-400" />
-            )}
+            <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
           </div>
 
-          {/* Profile Dropdown (Refined Style) */}
-          <div
-            className={`absolute top-full right-0 mt-3 w-56 bg-gradient-to-b from-black via-gray-950/90 to-black backdrop-blur-xl 
-                        border border-orange-700/50 rounded-lg 
-                        shadow-[0_10px_40px_rgba(255,69,0,0.4)] transition-all duration-200 ease-out transform
-                        ${showProfileDropdown ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 scale-95 pointer-events-none"}`}
-          >
-            {userData ? (
-              <div className="p-2">
-                <div className="px-3 py-2 border-b border-orange-700/30">
-                  <p className="text-sm font-semibold text-gray-200 truncate">
-                    {userData.name}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {userData.email}
-                  </p>
+          {/* Center: Nav Island */}
+          <nav className={`flex items-center gap-1 p-1.5 rounded-xl ${glassIslandStyle}`}>
+            {navLinks.map((link) => {
+              const isActive = location.pathname.startsWith(link.path);
+              return (
+                <button
+                  key={link.title}
+                  onClick={() => navigate(link.path)}
+                  className={isActive ? activeLinkStyles : commonLinkStyles}
+                >
+                  {React.cloneElement(link.icon, {
+                    className: isActive ? 'text-red-400' : 'text-zinc-400'
+                  })}
+                  <span>{link.title}</span>
+                </button>
+              );
+            })}
+
+            {/* --- PREMIUM UPGRADE BUTTONS --- */}
+            {userData && (
+              <>
+                <div className="w-px h-5 bg-white/10 mx-2"></div>
+                
+                {/* Go Pro Button (Free Plan) */}
+                {userData.subscriptionPlan === "Free" && (
+                  <button
+                    onClick={() => navigate("/premium")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-red-600 to-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all ml-1"
+                  >
+                    <FaCrown size={12} className="text-white" /> Go Pro
+                  </button>
+                )}
+
+                {/* Status Badge (Paid Plans) */}
+                {userData.subscriptionPlan !== "Free" && (
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border backdrop-blur-md ml-1 ${
+                    userData.subscriptionPlan === "Gladiator" ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-red-500/30 bg-red-500/10 text-red-400"
+                  }`}>
+                    <FaCrown size={12} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{userData.subscriptionPlan}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </nav>
+
+          {/* Right: Profile Dropdown */}
+          <div className="relative" ref={profileRef}>
+            <div
+              className={`w-12 h-12 rounded-xl cursor-pointer flex items-center justify-center overflow-hidden border backdrop-blur-xl transition-all duration-300 ${profileRingClass}`}
+              onClick={() => setShowProfileDropdown((prev) => !prev)}
+            >
+              {userData?.photoUrl ? (
+                <img src={userData.photoUrl} alt="profile" className="w-full h-full object-cover" />
+              ) : userData ? (
+                <span className="text-lg font-bold">{userData.name.charAt(0).toUpperCase()}</span>
+              ) : (
+                <IoPersonCircleSharp size={24} className="text-zinc-300" />
+              )}
+            </div>
+
+            {/* Profile Dropdown Menu (Glassy) */}
+            <div
+              className={`absolute top-full right-0 mt-3 w-56 bg-zinc-900/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-300 origin-top-right
+                         ${showProfileDropdown ? "opacity-100 scale-100 pointer-events-auto translate-y-0" : "opacity-0 scale-95 pointer-events-none -translate-y-2"}`}
+            >
+              {userData ? (
+                <div className="p-1.5">
+                  <div className="px-3 py-2.5 border-b border-white/10 mb-1">
+                    <p className="text-sm font-semibold text-white truncate">{userData.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">{userData.email}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <button
+                      onClick={() => {
+                        navigate(`/profile/${userData.username}`);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full flex items-center text-left px-3 py-2 rounded-md text-sm text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <FaUserCircle className="mr-2 text-zinc-400" size={14} /> My Profile
+                    </button>
+                    <button
+                      onClick={handleLogOut}
+                      className="w-full flex items-center text-left px-3 py-2 rounded-md text-sm text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <TbLogout className="mr-2 text-zinc-400" size={14} /> Logout
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-2 space-y-1">
+              ) : (
+                <div className="p-2">
                   <button
                     onClick={() => {
-                      navigate(`/profile/${userData.username}`);
+                      navigate("/login");
                       setShowProfileDropdown(false);
                     }}
-                    className="w-full flex items-center text-left px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-orange-900/50 hover:text-orange-300 transition-colors"
+                    className="w-full py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                   >
-                    <FaUserCircle className="mr-2" size={16} />
-                    My Profile
-                  </button>
-                  <button
-                    onClick={handleLogOut}
-                    className="w-full flex items-center text-left px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-orange-900/50 hover:text-orange-300 transition-colors"
-                  >
-                    <TbLogout className="mr-2" size={16} />
-                    Logout
+                    Login to Continue
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="p-2">
-                <button
-                  onClick={() => {
-                    navigate("/login");
-                    setShowProfileDropdown(false);
-                  }}
-                  className="w-full p-2 bg-orange-600 text-white text-sm font-bold rounded-lg flex items-center justify-center
-                                transition-all duration-300 transform hover:bg-orange-700 hover:shadow-[0_0_15px_rgba(255,69,0,0.7)] hover:scale-105"
-                >
-                  Login
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ####### Mobile Navigation (Refined Style) ####### */}
-      <div className="lg:hidden w-full h-20 fixed top-0 px-4 flex items-center justify-between bg-black/80 backdrop-blur-xl border-b border-orange-700/40 z-50 shadow-[0_0_20px_rgba(255,69,0,0.3)]">
+      {/* ####### Mobile Navigation (Frosted Glass) ####### */}
+      <div className="lg:hidden w-full h-16 fixed top-0 px-4 flex items-center justify-between bg-zinc-950/50 backdrop-blur-xl border-b border-white/10 z-50 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
         <img
           src={logo}
           alt="Logo"
-          className="w-14 rounded-md cursor-pointer"
+          className="w-8 object-contain cursor-pointer"
           onClick={() => navigate("/")}
         />
         <TfiMenu
-          className="text-3xl text-orange-500 cursor-pointer"
+          className="text-2xl text-zinc-200 cursor-pointer hover:text-white transition-colors"
           onClick={() => setShowHam(true)}
         />
       </div>
 
-      {/* Mobile Flyout Menu (Refined Style) */}
+      {/* Mobile Flyout Menu (Frosted Glass) */}
       <div
-        className={`fixed inset-0 w-full h-full bg-black/80 backdrop-blur-2xl z-[60] lg:hidden 
-                    flex flex-col items-center justify-center gap-6
-                    transition-transform duration-300 ease-in-out
-                    ${showHam ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-0 w-full h-full bg-zinc-950/80 backdrop-blur-2xl z-[60] lg:hidden 
+                    flex flex-col items-center justify-center gap-8
+                    transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]
+                    ${showHam ? "translate-x-0" : "translate-x-full"}`}
       >
         <GiTireIronCross
-          className="text-4xl text-orange-500 absolute top-6 right-5 cursor-pointer"
+          className="text-2xl text-zinc-400 absolute top-5 right-5 cursor-pointer hover:text-white transition-colors"
           onClick={() => setShowHam(false)}
         />
         
-        {/* Profile Pic */}
+        {/* Profile Pic Mobile */}
         {userData?.photoUrl ? (
           <img
             src={userData.photoUrl}
             alt="profile"
-            className="w-20 h-20 rounded-full object-cover border-2 border-orange-500 shadow-[0_0_20px_rgba(255,69,0,0.5)]"
+            className="w-20 h-20 rounded-full object-cover border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             onClick={() => handleMobileNav(`/profile/${userData.username}`)}
           />
         ) : userData ? (
-          <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold border-2 border-orange-500 bg-orange-900/60 shadow-[0_0_20px_rgba(255,69,0,0.5)]"
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold border border-white/20 bg-white/5 text-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                onClick={() => handleMobileNav(`/profile/${userData.username}`)}>
-            {userData.name.slice(0, 1).toUpperCase()}
+            {userData.name.charAt(0).toUpperCase()}
           </div>
         ) : (
-          <IoPersonCircleSharp className="w-20 h-20 text-gray-600" onClick={() => handleMobileNav("/login")}/>
+          <IoPersonCircleSharp className="w-20 h-20 text-zinc-500" onClick={() => handleMobileNav("/login")}/>
         )}
 
-        {/* Nav Links */}
-        <nav className="flex flex-col items-center gap-4">
-          {navLinks.map((link) => (
-            <button
-              key={link.title}
-              onClick={() => handleMobileNav(link.path)}
-              // 4. Apply conditional styling for mobile
-              className={
-                location.pathname.startsWith(link.path)
-                  ? `${mobileLinkStyles} !text-orange-400 [text-shadow:0_0_10px_rgba(255,69,0,0.5)]`
-                  : mobileLinkStyles
-              }
-            >
-              {React.cloneElement(link.icon, { size: 28 })}
-              <span>{link.title}</span>
-            </button>
-          ))}
+        {/* Nav Links Mobile */}
+        <nav className="flex flex-col items-center gap-6 w-full px-8">
+          {navLinks.map((link) => {
+            const isActive = location.pathname.startsWith(link.path);
+            return (
+              <button
+                key={link.title}
+                onClick={() => handleMobileNav(link.path)}
+                className={isActive ? `${mobileLinkStyles} !text-red-400` : mobileLinkStyles}
+              >
+                {React.cloneElement(link.icon, { size: 24, className: isActive ? "text-red-400" : "text-zinc-400" })}
+                <span>{link.title}</span>
+              </button>
+            );
+          })}
         </nav>
         
-        <div className="h-px w-2/3 bg-orange-700/40 my-2"></div>
+        <div className="h-px w-1/2 bg-white/10 my-2"></div>
         
-        {/* Auth Links */}
-        {userData ? (
+        {/* Auth Links Mobile */}
+        {userData && (
           <button
             onClick={() => handleMobileNav(`/profile/${userData.username}`)}
-            className={
-              location.pathname.startsWith('/profile')
-                ? `${mobileLinkStyles} !text-orange-400 [text-shadow:0_0_10px_rgba(255,69,0,0.5)]`
-                : mobileLinkStyles
-            }
+            className={location.pathname.startsWith('/profile') ? `${mobileLinkStyles} !text-red-400` : mobileLinkStyles}
           >
-            <FaUserCircle size={28} />
+            <FaUserCircle size={24} className={location.pathname.startsWith('/profile') ? "text-red-400" : "text-zinc-400"} />
             My Profile
           </button>
-        ) : null}
+        )}
 
         {!userData ? (
           <button
             onClick={() => handleMobileNav("/login")}
-            className="px-8 py-3 bg-orange-600 text-white text-xl font-bold rounded-lg transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/40"
+            className="px-10 py-3 mt-4 bg-red-600 text-white text-lg font-semibold rounded-xl hover:bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all hover:scale-105"
           >
-            Login
+            Login to Continue
           </button>
         ) : (
           <button
             onClick={handleLogOut}
-            className="px-8 py-3 bg-gray-800 text-gray-300 text-xl font-bold rounded-lg transform transition-all duration-300 hover:scale-105 hover:bg-gray-700"
+            className="px-10 py-3 mt-4 bg-white/5 border border-white/10 text-zinc-300 text-lg font-semibold rounded-xl hover:bg-white/10 hover:text-white transition-all"
           >
             Logout
           </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { serverUrl } from "../../App";
 import {
   FaArrowLeft,
@@ -9,8 +9,12 @@ import {
   FaPaperPlane,
   FaRobot,
   FaCog,
+  FaAngleDown,
+  FaAngleUp,
+  FaArrowsAltV
 } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
+import API from "../../api/axios.js"
 
 // Import your components
 import ProblemDescription from "../../component/ProblemPageComponent/ProblemDescription";
@@ -18,11 +22,11 @@ import CodeEditorPane from "../../component/ProblemPageComponent/CodeEditorPane"
 import ConsolePane from "../../component/ProblemPageComponent/ConsolePane";
 import AIChatPanel from "../../component/ProblemPageComponent/AIChatPanel";
 
-// --- Loading Spinner ---
+// --- Loading Spinner (Clean TUF Style) ---
 const LoadingSpinner = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-black space-y-4">
-    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin"></div>
-    <p className="text-white text-lg">Loading Problem...</p>
+  <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 space-y-4">
+    <div className="w-12 h-12 border-4 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
+    <p className="text-zinc-400 text-sm font-medium">Loading Workspace...</p>
   </div>
 );
 
@@ -52,13 +56,14 @@ function ProblemPage() {
 
   // --- Layout State ---
   const [leftPaneWidth, setLeftPaneWidth] = useState(45);
-  const [descPaneHeight, setDescPaneHeight] = useState(60);
+  const [editorPaneHeight, setEditorPaneHeight] = useState(65); 
+  const [lastEditorHeight, setLastEditorHeight] = useState(65); // Remembers height for restoring
 
   const [showAI, setShowAI] = useState(false);
 
   // --- Refs ---
   const containerRef = useRef(null);
-  const leftPaneRef = useRef(null);
+  const rightPaneRef = useRef(null); 
   const isResizingHorizontal = useRef(false);
   const isResizingVertical = useRef(false);
 
@@ -67,26 +72,32 @@ function ProblemPage() {
     const fetchProblem = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(
-          `${serverUrl}/api/problems/getoneproblem/${slug}`,
-          { withCredentials: true }
-        );
-        setProblem(data);
-        if (data.starterCode?.length) {
-          setSelectedLanguage(data.starterCode[0].language);
-          setCode(data.starterCode[0].code);
+        const { data } = await API.get(`/problems/${slug}`);
+        const problemData = data?.data || data;
+        
+        setProblem(problemData);
+        
+        if (problemData?.starterCode?.length > 0) {
+          setSelectedLanguage(problemData.starterCode[0].language);
+          setCode(problemData.starterCode[0].code);
         } else {
           setCode("// No starter code found.");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Problem Fetch Error:", err);
         setError("Failed to load problem.");
-        toast.error("Failed to load problem.");
+        toast.error(err.response?.data?.message || "Failed to load problem.");
       } finally {
         setLoading(false);
       }
     };
-    fetchProblem();
+    
+    if (slug && slug !== "undefined") {
+        fetchProblem();
+    } else {
+        setLoading(false);
+        setError("Invalid problem URL.");
+    }
   }, [slug]);
 
   // --- 2. Fetch Submissions ---
@@ -95,11 +106,9 @@ function ProblemPage() {
       if (activeProblemTab === "submissions" && problem) {
         setLoadingSubmissions(true);
         try {
-          const { data } = await axios.get(
-            `${serverUrl}/api/submissions/problem/${problem.slug}`,
-            { withCredentials: true }
-          );
-          setSubmissions(Array.isArray(data) ? data : []);
+          const { data } = await API.get(`/submissions/problem/${problem.slug}`);
+          const fetchedSubs = data?.data || data;
+          setSubmissions(Array.isArray(fetchedSubs) ? fetchedSubs : []);
         } catch {
           toast.error("Failed to load submissions.");
         } finally {
@@ -110,7 +119,7 @@ function ProblemPage() {
     fetchSubs();
   }, [activeProblemTab, problem]);
 
-  // --- 3. Resizing Logic ---
+  // --- 3. Layout & Resizing Logic ---
   const handleMouseDownHorizontal = useCallback((e) => {
     e.preventDefault();
     isResizingHorizontal.current = true;
@@ -133,19 +142,23 @@ function ProblemPage() {
   }, []);
 
   const handleMouseMove = useCallback((e) => {
-    // Horizontal: Left Pane vs Right Pane
     if (isResizingHorizontal.current && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
-      newWidth = Math.max(25, Math.min(75, newWidth));
+      newWidth = Math.max(25, Math.min(75, newWidth)); 
       setLeftPaneWidth(newWidth);
     }
-    // Vertical: Description vs Console (Left Pane)
-    if (isResizingVertical.current && leftPaneRef.current) {
-      const rect = leftPaneRef.current.getBoundingClientRect();
+    
+    if (isResizingVertical.current && rightPaneRef.current) {
+      const rect = rightPaneRef.current.getBoundingClientRect();
       let newHeight = ((e.clientY - rect.top) / rect.height) * 100;
-      newHeight = Math.max(20, Math.min(80, newHeight));
-      setDescPaneHeight(newHeight);
+      
+      // Snapping mechanics for smooth UX
+      if (newHeight < 10) newHeight = 0; // Snap to full console
+      else if (newHeight > 90) newHeight = 100; // Snap to hidden console
+      else newHeight = Math.max(10, Math.min(90, newHeight)); 
+      
+      setEditorPaneHeight(newHeight);
     }
   }, []);
 
@@ -157,6 +170,19 @@ function ProblemPage() {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [handleMouseMove, handleMouseUp]);
+
+  // Console Toggle Helpers
+  const toggleConsole = (mode) => {
+    if (mode === "hide") {
+      if (editorPaneHeight > 0 && editorPaneHeight < 100) setLastEditorHeight(editorPaneHeight);
+      setEditorPaneHeight(100);
+    } else if (mode === "full") {
+      if (editorPaneHeight > 0 && editorPaneHeight < 100) setLastEditorHeight(editorPaneHeight);
+      setEditorPaneHeight(0);
+    } else if (mode === "restore") {
+      setEditorPaneHeight(lastEditorHeight || 60);
+    }
+  };
 
   // --- 4. Editor Handlers ---
   const handleEditorChange = (val) => setCode(val || "");
@@ -170,7 +196,7 @@ function ProblemPage() {
     const starter = problem.starterCode.find(
       (s) => s.language === selectedLanguage
     );
-    if (starter && window.confirm("Reset your code?")) setCode(starter.code);
+    if (starter && window.confirm("Reset your code to initial state?")) setCode(starter.code);
   };
 
   // --- 5. Submission Logic ---
@@ -182,16 +208,18 @@ function ProblemPage() {
 
     const interval = setInterval(async () => {
       try {
-        const { data: result } = await axios.get(
-          `${serverUrl}/api/submissions/status/${submissionId}`,
-          { withCredentials: true }
-        );
+        const { data } = await API.get(`/submissions/status/${submissionId}`);
+        const result = data?.data || data;
+
         if (result.status !== "Judging" && result.status !== "Pending") {
           clearInterval(interval);
           setPollingInterval(null);
           setIsSubmitting(false);
           setSubmissionResult(result);
-          toast.success(`Submission ${result.status}!`);
+          
+          if (result.status === "Accepted") toast.success("Solution Accepted!");
+          else toast.error(`Submission: ${result.status}`);
+          
           if (activeProblemTab === "submissions") {
             setActiveProblemTab("");
             setTimeout(() => setActiveProblemTab("submissions"), 50);
@@ -209,109 +237,96 @@ function ProblemPage() {
     setPollingInterval(interval);
   };
 
-const handleSubmit = async () => {
-    if (!code.trim()) return toast.warn("Code cannot be empty.");
+  const handleSubmit = async () => {
+    if (!code.trim()) return toast.error("Code cannot be empty.");
     
     setIsSubmitting(true);
     setSubmissionResult(null);
     setActiveConsoleTab("result"); 
 
-    try {
-      const { data: pendingSubmission } = await axios.post(
-        `${serverUrl}/api/submissions`,
-        { slug: problem.slug, language: selectedLanguage, code },
-        { withCredentials: true }
-      );
+    //  Auto-expand console if it's hidden when user submits
+    if (editorPaneHeight === 100) {
+      setEditorPaneHeight(lastEditorHeight || 60); 
+    } else if (editorPaneHeight > 75) {
+      setEditorPaneHeight(60); // Pop up a bit more to see results clearly
+    }
 
-      
+    try {
+      const { data } = await API.post(`/submissions`, { 
+          slug: problem.slug, 
+          language: selectedLanguage, 
+          code 
+      });
+      const pendingSubmission = data?.data || data;
+
       if (pendingSubmission._id) {
-         toast.success("Submission Queued! ");
+         toast.success("Submission Queued!");
          pollForResult(pendingSubmission._id);
       }
 
     } catch (err) {
       setIsSubmitting(false);
-
-      //  RATE LIMIT CHECK 
-      if (err.response && err.response.status === 429) {
-        toast.warning(err.response.data.message || "You are submitting too fast! ");
-      } 
-      // Handle other specific errors
-      else if (err.response) {
-        toast.error(err.response.data.message || "Submission failed.");
+      if (err.response?.status === 429) {
+        toast.error("You are submitting too fast!");
       } else {
-        toast.error("Network Error. Check your connection.");
+        toast.error(err.response?.data?.message || "Submission failed.");
       }
     }
   };
 
   const handleRun = () => {
-    toast.info("Run feature coming soon!");
+    toast.error("Run feature coming soon!");
   };
 
   if (loading) return <LoadingSpinner />;
   if (error || !problem)
-    return <div className="text-white text-center p-10">Problem not found</div>;
+    return <div className="text-zinc-400 text-center p-10 font-medium tracking-wide bg-zinc-950 min-h-screen">Problem not found</div>;
 
-  // --- Styles ---
-  const actionBtnStyle =
-    "flex items-center gap-2 px-4 py-1.5 rounded-lg font-bold text-sm transition-all transform active:scale-95";
-  const runBtnStyle = `${actionBtnStyle} bg-gray-900 text-gray-300 border border-gray-700 hover:border-orange-500/50 hover:text-white hover:bg-gray-800 hover:shadow-[0_0_15px_rgba(255,165,0,0.1)]`;
-  const submitBtnStyle = `${actionBtnStyle} bg-gradient-to-r from-orange-600 to-red-600 text-white border border-orange-500/50 shadow-[0_0_20px_rgba(255,69,0,0.4)] hover:shadow-[0_0_30px_rgba(255,69,0,0.6)] hover:scale-105`;
+  // --- Styles  ---
+  const actionBtnStyle = "flex items-center gap-2 px-4 py-1.5 rounded-md font-semibold text-xs transition-colors duration-200 focus:outline-none";
+  const runBtnStyle = `${actionBtnStyle} bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white`;
+  const submitBtnStyle = `${actionBtnStyle} bg-red-600 text-white border border-transparent hover:bg-red-500 shadow-sm`;
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden godfather-bg"
+      className="flex flex-col h-screen bg-zinc-950 text-zinc-300 overflow-hidden font-sans"
     >
       {/* ======================= TOP NAVBAR ======================= */}
-      <header className="shrink-0 flex items-center justify-between h-16 px-6 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-orange-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] z-20 relative">
+      <header className="shrink-0 flex items-center justify-between h-14 px-5 bg-zinc-950 border-b border-zinc-800 z-20 shadow-sm">
+        
         {/* LEFT: Back Button & Title */}
         <div className="flex items-center gap-5 min-w-0 overflow-hidden">
           <button
             onClick={() => navigate("/practice")}
-            className="group flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider 
-                       bg-black/50 border border-gray-800 rounded-full py-2 px-4 
-                       transition-all duration-300 
-                       hover:border-orange-600/80 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(255,69,0,0.2)]"
+            className="group flex items-center gap-2 text-zinc-400 font-semibold text-xs tracking-wider 
+                       bg-zinc-900 border border-zinc-800 rounded-md py-1.5 px-3 
+                       transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-200"
           >
-            <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
-            <span>Arena</span>
+            <FaArrowLeft size={10} className="group-hover:-translate-x-0.5 transition-transform" />
+            <span className="uppercase">List</span>
           </button>
 
           <div className="flex items-center gap-3 overflow-hidden">
-            <h1
-              className="text-xl font-black text-white whitespace-nowrap truncate 
-                           [text-shadow:0_0_15px_rgba(255,69,0,0.3)] tracking-tight"
-            >
+            <h1 className="text-[15px] font-bold text-zinc-100 whitespace-nowrap truncate tracking-tight">
               {problem.title}
             </h1>
             {problem.isPremium && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 p-1.5 rounded-md shadow-[0_0_10px_rgba(255,215,0,0.2)]">
-                <IoIosLock className="text-yellow-400 text-sm" />
+              <div className="bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md flex items-center shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                <IoIosLock className="text-amber-500 text-sm" />
               </div>
             )}
           </div>
         </div>
 
         {/* CENTER: ACTION BUTTONS */}
-        <div className="flex items-center gap-4 mx-4">
-          <button
-            onClick={handleRun}
-            disabled={isSubmitting}
-            className={runBtnStyle}
-          >
-            <FaPlay size={10} /> <span className="uppercase">Run</span>
+        <div className="flex items-center gap-3">
+          <button onClick={handleRun} disabled={isSubmitting} className={runBtnStyle}>
+            <FaPlay size={10} className="text-emerald-500" /> <span>Run</span>
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={submitBtnStyle}
-          >
-            <FaPaperPlane size={12} />{" "}
-            <span className="uppercase">
-              {isSubmitting ? "Judging..." : "Submit"}
-            </span>
+          <button onClick={handleSubmit} disabled={isSubmitting} className={submitBtnStyle}>
+            <FaPaperPlane size={10} />
+            <span>{isSubmitting ? "Judging..." : "Submit"}</span>
           </button>
         </div>
 
@@ -319,104 +334,150 @@ const handleSubmit = async () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowAI(!showAI)}
-            title="Ask Bhoomi AI"
-            className={`p-2 rounded-full transition ${
-              showAI
-                ? "text-orange-400 bg-gray-800"
-                : "hover:text-orange-400 hover:bg-gray-900"
+            title="Ask AI"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold transition-all ${
+              showAI 
+                ? "border-red-500/50 bg-red-500/10 text-red-400" 
+                : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
             }`}
           >
-            <FaRobot size={18} />
+            <FaRobot size={14} /> AI Tutor
           </button>
-          <button
-            title="Settings (Soon)"
-            className="p-2.5 rounded-lg bg-gray-900/50 border border-transparent text-gray-400 
-                       hover:border-orange-500/30 hover:text-orange-400 hover:bg-orange-900/10 
-                       hover:shadow-[0_0_15px_rgba(255,69,0,0.15)] transition-all duration-300"
-          >
-            <FaCog size={18} />
+          <button title="Settings" className="p-2 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
+            <FaCog size={15} />
           </button>
         </div>
       </header>
 
       {/* ======================= MAIN LAYOUT ======================= */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* --- LEFT PANE (Description + Console) --- */}
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-zinc-950 p-1 gap-1">
+        
+        {/* --- LEFT PANE (Problem Description Only) --- */}
         <div
-          ref={leftPaneRef}
-          className="flex flex-col h-full border-r border-orange-900/40"
+          className="flex flex-col h-full bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden shadow-sm"
           style={{ width: `${leftPaneWidth}%` }}
         >
-          {/* Top: Description */}
-          <div
-            className="flex flex-col overflow-hidden border-b border-orange-900/40"
-            style={{ height: `${descPaneHeight}%` }}
-          >
-            <ProblemDescription
-              problem={problem}
-              slug={problem.slug}
-              activeLeftTab={activeProblemTab}
-              setActiveLeftTab={setActiveProblemTab}
-              submissions={submissions}
-              loadingSubmissions={loadingSubmissions}
-              setSubmissions={setSubmissions}
-              setLoadingSubmissions={setLoadingSubmissions}
-              isContestMode={false}
-            />
-          </div>
-
-          {/* Vertical Resizer */}
-          <div
-            onMouseDown={handleMouseDownVertical}
-            className="w-full h-1.5 bg-linear-to-r from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-row-resize transition-colors z-10"
-            title="Drag to resize"
+          <ProblemDescription
+            problem={problem}
+            slug={problem.slug}
+            activeLeftTab={activeProblemTab}
+            setActiveLeftTab={setActiveProblemTab}
+            submissions={submissions}
+            loadingSubmissions={loadingSubmissions}
+            setSubmissions={setSubmissions}
+            setLoadingSubmissions={setLoadingSubmissions}
+            isContestMode={false}
           />
-
-          {/* Bottom: Console */}
-          <div className="flex-1 min-h-0 overflow-hidden bg-black">
-            <ConsolePane
-              problemTestCases={problem.testCases}
-              submissionResult={submissionResult}
-              isSubmitting={isSubmitting}
-              // Handlers passed but buttons are hidden/ignored in ConsolePane via logic below
-              handleSubmit={() => {}}
-              handleRun={() => {}}
-              activeRightTab={activeConsoleTab}
-              setActiveRightTab={setActiveConsoleTab}
-            />
-          </div>
         </div>
 
         {/* --- HORIZONTAL RESIZER --- */}
         <div
           onMouseDown={handleMouseDownHorizontal}
-          className="w-1.5 h-full bg-linear-to-b from-gray-900 via-orange-900/50 to-gray-900 hover:bg-orange-600/50 cursor-col-resize transition-colors z-10"
-          title="Drag to resize"
-        />
-
-        {/* --- RIGHT PANE (Full Height Editor) --- */}
-        <div
-          className="flex flex-col h-full overflow-hidden"
-          style={{ width: `calc(${100 - leftPaneWidth}% - 6px)` }}
+          className="w-2 h-full cursor-col-resize flex flex-col justify-center items-center group z-10 hover:bg-zinc-800/50 rounded transition-colors"
+          title="Drag to resize panels"
         >
-          <CodeEditorPane
-            problem={problem}
-            selectedLanguage={selectedLanguage}
-            code={code}
-            handleLanguageChange={handleLanguageChange}
-            handleEditorChange={handleEditorChange}
-            resetCode={resetCode}
-          />
+          <div className="h-8 w-[3px] bg-zinc-700 rounded-full group-hover:bg-red-500 transition-colors"></div>
+        </div>
+
+        {/* --- RIGHT PANE (Editor Top + Console Bottom) --- */}
+        <div
+          ref={rightPaneRef}
+          className="flex flex-col h-full overflow-hidden gap-1"
+          style={{ width: `calc(${100 - leftPaneWidth}% - 8px)` }} 
+        >
+          
+          {/* TOP: Code Editor */}
+          <div 
+            className="flex flex-col bg-[#1e1e1e] border border-zinc-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+            style={{ 
+              height: editorPaneHeight === 100 ? 'calc(100% - 40px)' : `${editorPaneHeight}%`,
+              display: editorPaneHeight === 0 ? 'none' : 'flex'
+            }}
+          >
+            <CodeEditorPane
+              problem={problem}
+              selectedLanguage={selectedLanguage}
+              code={code}
+              handleLanguageChange={handleLanguageChange}
+              handleEditorChange={handleEditorChange}
+              resetCode={resetCode}
+            />
+          </div>
+
+          {/* MIDDLE: Stylish Console Handle / Resizer */}
+          <div
+            onMouseDown={handleMouseDownVertical}
+            className="h-[36px] shrink-0 w-full bg-zinc-900 border border-zinc-800 rounded-lg flex justify-between items-center px-4 cursor-row-resize z-10 group shadow-sm select-none"
+            title="Drag to resize console"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-300 transition-colors">
+              <span className="w-8 h-[3px] bg-zinc-700 rounded-full group-hover:bg-red-500 transition-colors mr-2"></span>
+              Console
+            </div>
+            
+            {/* Console Toggle Controls */}
+            <div className="flex items-center gap-1 text-zinc-500">
+              {editorPaneHeight < 100 && (
+                <button
+                  title="Minimize Console"
+                  onClick={(e) => { e.stopPropagation(); toggleConsole("hide"); }}
+                  className="p-1 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <FaAngleDown size={14} />
+                </button>
+              )}
+              {editorPaneHeight > 0 && editorPaneHeight < 100 && (
+                <button
+                  title="Maximize Console"
+                  onClick={(e) => { e.stopPropagation(); toggleConsole("full"); }}
+                  className="p-1 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <FaAngleUp size={14} />
+                </button>
+              )}
+              {(editorPaneHeight === 0 || editorPaneHeight === 100) && (
+                <button
+                  title="Restore Split"
+                  onClick={(e) => { e.stopPropagation(); toggleConsole("restore"); }}
+                  className="p-1 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <FaArrowsAltV size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* BOTTOM: Console */}
+          <div 
+            className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm overflow-hidden transition-all duration-200"
+            style={{ 
+              height: editorPaneHeight === 0 ? 'calc(100% - 40px)' : `calc(${100 - editorPaneHeight}% - 40px)`,
+              display: editorPaneHeight === 100 ? 'none' : 'flex'
+            }}
+          >
+            <ConsolePane
+              problemTestCases={problem.testCases}
+              submissionResult={submissionResult}
+              isSubmitting={isSubmitting}
+              handleSubmit={handleSubmit}
+              handleRun={handleRun}
+              activeRightTab={activeConsoleTab}
+              setActiveRightTab={setActiveConsoleTab}
+            />
+          </div>
+
         </div>
       </div>
 
-      {/* AI Overlay */}
+      {/* ======================= AI OVERLAY ======================= */}
       {showAI && (
-        <AIChatPanel
-          onClose={() => setShowAI(false)}
-          problem={problem}
-          userCode={code} // Passes current editor code
-        />
+        <div className="absolute top-16 right-6 bottom-6 w-[400px] shadow-2xl z-50 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 flex flex-col">
+          <AIChatPanel
+            onClose={() => setShowAI(false)}
+            problem={problem}
+            userCode={code} 
+          />
+        </div>
       )}
     </div>
   );

@@ -13,9 +13,9 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-black/90 border border-orange-500/50 p-3 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+      <div className="bg-black/90 border border-green-500/50 p-3 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)]">
         <p className="text-gray-400 text-xs mb-1">{label}</p>
-        <p className="text-orange-400 font-bold text-sm">
+        <p className="text-green-400 font-bold text-sm">
           Submissions: {payload[0].value}
         </p>
       </div>

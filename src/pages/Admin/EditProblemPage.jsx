@@ -1,145 +1,87 @@
-import React, { useState, useEffect, useCallback, Fragment } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { serverUrl } from "../../App"; // Fixed import path
+import toast from "react-hot-toast"; 
 import {
   FaArrowLeft,
   FaPlus,
   FaTrashAlt,
   FaSave,
   FaEye,
-  FaFileImport,
+  FaLaptopCode
 } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-// --- Loading Spinner ---
+// API instance
+import API from "../../api/axios.js";
+
+// --- Loading Spinner  ---
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen bg-black">
-    <div className="w-20 h-20 border-8 border-t-transparent border-orange-600 rounded-full animate-spin [box-shadow:0_0_30px_rgba(255,69,0,0.7),inset_0_0_8px_rgba(255,69,0,0.4)]"></div>
+  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+    <div className="w-10 h-10 border-4 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
   </div>
 );
 
-// --- InfoPanel Component ---
-const InfoPanel = ({ title, children }) => (
-  <details className="mb-4" open>
-    <summary className="cursor-pointer select-none text-sm text-orange-300 font-semibold mb-2">
-      {title}
-    </summary>
-    <div className="mt-2 p-3 bg-orange-950/10 border border-orange-800/40 rounded text-xs text-gray-300 font-mono whitespace-pre-wrap">
-      {children}
-    </div>
-  </details>
-);
-
-// --- Godfather Input ---
-const GodfatherInput = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-  placeholder = "",
-}) => (
+// ---  Input ---
+const TUFInput = ({ id, name, label, value, onChange, type = "text", required = false, placeholder = "" }) => (
   <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
+    <label htmlFor={id} className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">
+      {label}
     </label>
     <input
-      type={type}
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      placeholder={placeholder}
-      className={`w-full p-2.5 bg-black text-white rounded-md border border-orange-700/60 focus:outline-none focus:border-orange-600/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] transition-all duration-300 text-sm ${
-        type === "date" || type === "time" ? "text-gray-300" : ""
-      }`}
+      type={type} id={id} name={name || id} value={value} onChange={onChange} required={required} placeholder={placeholder}
+      className="w-full p-2.5 bg-zinc-950 text-zinc-100 rounded-md border border-zinc-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm placeholder:text-zinc-600 shadow-sm"
     />
   </div>
 );
 
-// --- Godfather Textarea ---
-const GodfatherTextarea = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  rows = 4,
-  required = false,
-  placeholder = "",
-}) => (
+// ---  Textarea ---
+const TUFTextarea = ({ id, name, label, value, onChange, rows = 4, required = false, placeholder = "" }) => (
   <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
-    </label>
+    {label && (
+        <label htmlFor={id} className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">
+        {label}
+        </label>
+    )}
     <textarea
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full p-2.5 bg-black text-white rounded-md border border-orange-700/60 focus:outline-none focus:border-orange-600/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] transition-all duration-300 text-sm resize-y font-mono"
+      id={id} name={name || id} value={value} onChange={onChange} required={required} placeholder={placeholder} rows={rows}
+      className="w-full p-3 bg-zinc-950 text-zinc-300 rounded-md border border-zinc-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm resize-y font-mono placeholder:text-zinc-600 shadow-sm custom-scrollbar"
     />
   </div>
 );
 
-// --- Godfather Select ---
-const GodfatherSelect = ({
-  id,
-  name,
-  label,
-  value,
-  onChange,
-  children,
-  required = false,
-  disabled = false,
-}) => (
+// ---  Select ---
+const TUFSelect = ({ id, name, label, value, onChange, children, required = false, disabled = false }) => (
   <div className="w-full mb-5">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-300 mb-1.5"
-    >
-      {" "}
-      {label}{" "}
+    <label htmlFor={id} className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">
+      {label}
     </label>
     <select
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      required={required}
-      disabled={disabled}
-      className="w-full p-2.5 bg-black text-white rounded-md border border-orange-700/60 focus:outline-none focus:border-orange-600/80 focus:shadow-[0_0_15px_rgba(255,69,0,0.3)] transition-all duration-300 text-sm"
+      id={id} name={name || id} value={value} onChange={onChange} required={required} disabled={disabled}
+      className="w-full p-2.5 bg-zinc-950 text-zinc-100 rounded-md border border-zinc-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm disabled:opacity-50 shadow-sm cursor-pointer"
     >
       {children}
     </select>
   </div>
 );
 
+// Helper for Preview Difficulty Color
+const getDifficultyColor = (diff) => {
+  if (diff === "Easy") return "text-emerald-400 border-emerald-500/20 bg-emerald-500/10";
+  if (diff === "Medium") return "text-amber-400 border-amber-500/20 bg-amber-500/10";
+  if (diff === "Hard") return "text-red-400 border-red-500/20 bg-red-500/10";
+  if (diff === "Super Hard") return "text-purple-400 border-purple-500/20 bg-purple-500/10";
+  return "text-zinc-400 border-zinc-500/20 bg-zinc-500/10";
+};
+
 function EditProblemPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
 
   // --- State ---
-  const [loading, setLoading] = useState(true); // Page load
-  const [saving, setSaving] = useState(false); // For submit/save buttons
+  const [loading, setLoading] = useState(true); 
+  const [saving, setSaving] = useState(false); 
   const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -150,11 +92,11 @@ function EditProblemPage() {
     isPublished: true,
     originContest: "",
     starterCode: [{ language: "javascript", code: "" }],
-    driverCode: [{ language: "javascript", code: "" }], // Initialize driverCode
+    driverCode: [{ language: "javascript", code: "" }], 
     solution: "",
   });
 
-  const [testCases, setTestCases] = useState([]); // Separate state for test cases
+  const [testCases, setTestCases] = useState([]); 
   const [newTestCase, setNewTestCase] = useState({
     input: "",
     expectedOutput: "",
@@ -169,10 +111,6 @@ function EditProblemPage() {
   const [upcomingContests, setUpcomingContests] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
 
-  // UI helpers
-  const [showDescriptionPreview, setShowDescriptionPreview] = useState(false);
-  const [showSolutionPreview, setShowSolutionPreview] = useState(false);
-
   // --- Fetch All Data on Load ---
   useEffect(() => {
     const fetchAllData = async () => {
@@ -180,24 +118,11 @@ function EditProblemPage() {
       setLoading(true);
       setLoadingDropdowns(true);
       try {
-        // Fetch in parallel
-        const problemPromise = axios.get(
-          `${serverUrl}/api/problems/admin/edit/${slug}`,
-          { withCredentials: true }
-        );
-        const testCasesPromise = axios.get(
-          `${serverUrl}/api/problems/${slug}/alltestcases`,
-          { withCredentials: true }
-        );
-        const tagsPromise = axios.get(`${serverUrl}/api/tags/problems`, {
-          withCredentials: true,
-        });
-        const companiesPromise = axios.get(`${serverUrl}/api/tags/companies`, {
-          withCredentials: true,
-        });
-        const contestsPromise = axios.get(`${serverUrl}/api/contests`, {
-          withCredentials: true,
-        });
+        const problemPromise = API.get(`/problems/admin/${slug}`);
+        const testCasesPromise = API.get(`/problems/${slug}/testcases`);
+        const tagsPromise = API.get(`/tags/problems`);
+        const companiesPromise = API.get(`/tags/companies`);
+        const contestsPromise = API.get(`/contests`);
 
         const [
           problemRes,
@@ -206,16 +131,13 @@ function EditProblemPage() {
           companiesResult,
           contestsResult,
         ] = await Promise.allSettled([
-          problemPromise,
-          testCasesPromise,
-          tagsPromise,
-          companiesPromise,
-          contestsPromise,
+          problemPromise, testCasesPromise, tagsPromise, companiesPromise, contestsPromise,
         ]);
 
         // Process Problem
         if (problemRes.status === "fulfilled") {
-          const fetchedProblem = problemRes.value.data;
+          const fetchedProblem = problemRes.value.data?.data || problemRes.value.data;
+          
           setFormData({
             title: fetchedProblem.title || "",
             description: fetchedProblem.description || "",
@@ -223,15 +145,8 @@ function EditProblemPage() {
             isPremium: fetchedProblem.isPremium || false,
             isPublished: fetchedProblem.isPublished,
             originContest: fetchedProblem.originContest || "",
-            starterCode:
-              fetchedProblem.starterCode?.length > 0
-                ? fetchedProblem.starterCode
-                : [{ language: "javascript", code: "" }],
-            // Populate driverCode
-            driverCode:
-              fetchedProblem.driverCode?.length > 0
-                ? fetchedProblem.driverCode
-                : [{ language: "javascript", code: "" }],
+            starterCode: fetchedProblem.starterCode?.length > 0 ? fetchedProblem.starterCode : [{ language: "javascript", code: "" }],
+            driverCode: fetchedProblem.driverCode?.length > 0 ? fetchedProblem.driverCode : [{ language: "javascript", code: "" }],
             solution: fetchedProblem.solution || "",
           });
           setTagInput((fetchedProblem.tags || []).join(", "));
@@ -242,23 +157,21 @@ function EditProblemPage() {
 
         // Process Test Cases
         if (testCasesRes.status === "fulfilled") {
-          setTestCases(testCasesRes.value.data);
+          setTestCases(testCasesRes.value.data?.data || testCasesRes.value.data || []);
         } else {
           throw new Error("Failed to load test cases.");
         }
 
         // Process Dropdown Data
-        if (tagsResult.status === "fulfilled")
-          setAvailableTags(tagsResult.value.data);
+        if (tagsResult.status === "fulfilled") setAvailableTags(tagsResult.value.data?.data || tagsResult.value.data || []);
         else toast.error("Failed to load problem tags.");
 
-        if (companiesResult.status === "fulfilled")
-          setAvailableCompanies(companiesResult.value.data);
+        if (companiesResult.status === "fulfilled") setAvailableCompanies(companiesResult.value.data?.data || companiesResult.value.data || []);
         else toast.error("Failed to load company tags.");
 
-        if (contestsResult.status === "fulfilled")
-          setUpcomingContests(contestsResult.value.data.upcoming || []);
+        if (contestsResult.status === "fulfilled") setUpcomingContests(contestsResult.value.data?.data?.upcoming || contestsResult.value.data?.upcoming || []);
         else toast.error("Failed to load contests list.");
+
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(err.message || "Failed to load data.");
@@ -298,17 +211,9 @@ function EditProblemPage() {
     sc[index][field] = value;
     setFormData((prev) => ({ ...prev, starterCode: sc }));
   };
-  const addStarterCode = () =>
-    setFormData((prev) => ({
-      ...prev,
-      starterCode: [...prev.starterCode, { language: "", code: "" }],
-    }));
+  const addStarterCode = () => setFormData((prev) => ({ ...prev, starterCode: [...prev.starterCode, { language: "", code: "" }] }));
   const removeStarterCode = (index) => {
-    if (formData.starterCode.length > 1)
-      setFormData((prev) => ({
-        ...prev,
-        starterCode: prev.starterCode.filter((_, i) => i !== index),
-      }));
+    if (formData.starterCode.length > 1) setFormData((prev) => ({ ...prev, starterCode: prev.starterCode.filter((_, i) => i !== index) }));
   };
 
   // Driver code handlers
@@ -317,41 +222,27 @@ function EditProblemPage() {
     dc[index][field] = value;
     setFormData((prev) => ({ ...prev, driverCode: dc }));
   };
-  const addDriverCode = () =>
-    setFormData((prev) => ({
-      ...prev,
-      driverCode: [...prev.driverCode, { language: "", code: "" }],
-    }));
-  const removeDriverCode = (index) =>
-    setFormData((prev) => ({
-      ...prev,
-      driverCode: prev.driverCode.filter((_, i) => i !== index),
-    }));
+  const addDriverCode = () => setFormData((prev) => ({ ...prev, driverCode: [...prev.driverCode, { language: "", code: "" }] }));
+  const removeDriverCode = (index) => setFormData((prev) => ({ ...prev, driverCode: prev.driverCode.filter((_, i) => i !== index) }));
 
   const handleNewTestCaseChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewTestCase((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setNewTestCase((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   // --- Test Case API Handlers ---
   const handleAddTestCase = async (e) => {
     e.preventDefault();
     if (!newTestCase.input.trim() || newTestCase.expectedOutput === undefined) {
-      toast.warn("Input and Output required.");
+      toast.error("Input and Output required.");
       return;
     }
     setSaving(true);
     try {
-      const { data: addedTestCase } = await axios.post(
-        `${serverUrl}/api/problems/${slug}/testcases`,
-        newTestCase,
-        { withCredentials: true }
-      );
-      setTestCases((prev) => [...prev, addedTestCase]); // Add to local state
-      setNewTestCase({ input: "", expectedOutput: "", isSample: false }); // Reset form
+      const { data } = await API.post(`/problems/${slug}/testcases`, newTestCase);
+      const addedTestCase = data?.data || data;
+      setTestCases((prev) => [...prev, addedTestCase]); 
+      setNewTestCase({ input: "", expectedOutput: "", isSample: false }); 
       toast.success("Test case added!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to add.");
@@ -364,9 +255,7 @@ function EditProblemPage() {
     if (!window.confirm("Delete this test case?")) return;
     setSaving(true);
     try {
-      await axios.delete(`${serverUrl}/api/problems/testcases/${testCaseId}`, {
-        withCredentials: true,
-      });
+      await API.delete(`/problems/testcases/${testCaseId}`);
       setTestCases((prev) => prev.filter((tc) => tc._id !== testCaseId));
       toast.success("Test case deleted.");
     } catch (err) {
@@ -379,18 +268,12 @@ function EditProblemPage() {
   // --- Form Validation & Normalization ---
   const normalizeForSubmit = (data) => {
     const normalized = { ...data };
-    normalized.description = (normalized.description || "")
-      .replace(/\r\n/g, "\n")
-      .trim();
-    normalized.solution = (normalized.solution || "")
-      .replace(/\r\n/g, "\n")
-      .trim();
-    // starterCode keep as-is but trim code newline endings
+    normalized.description = (normalized.description || "").replace(/\r\n/g, "\n").trim();
+    normalized.solution = (normalized.solution || "").replace(/\r\n/g, "\n").trim();
     normalized.starterCode = (normalized.starterCode || []).map((s) => ({
       language: (s.language || "").trim(),
       code: (s.code || "").replace(/\r\n/g, "\n"),
     }));
-    // driverCode normalization
     normalized.driverCode = (normalized.driverCode || []).map((s) => ({
       language: (s.language || "").trim(),
       code: (s.code || "").replace(/\r\n/g, "\n"),
@@ -400,16 +283,10 @@ function EditProblemPage() {
 
   const validateBeforeSubmit = (data) => {
     if (!data.title || !data.title.trim()) return "Title is required.";
-    if (!data.description || !data.description.trim())
-      return "Description is required.";
-    // if (testCases.length === 0) return "At least one test case must be saved.";
-    
-    // Starter code validation
-    if (!Array.isArray(data.starterCode) || data.starterCode.length === 0)
-      return "Provide at least one starter code snippet.";
+    if (!data.description || !data.description.trim()) return "Description is required.";
+    if (!Array.isArray(data.starterCode) || data.starterCode.length === 0) return "Provide at least one starter code snippet.";
     for (let i = 0; i < data.starterCode.length; i++) {
-      if (!data.starterCode[i].language || !data.starterCode[i].language.trim())
-        return `Starter code #${i + 1} needs a language.`;
+      if (!data.starterCode[i].language || !data.starterCode[i].language.trim()) return `Starter code #${i + 1} needs a language.`;
     }
     return null;
   };
@@ -427,14 +304,8 @@ function EditProblemPage() {
 
     setSaving(true);
     try {
-      const tagsArray = tagInput
-        .split(",")
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
-      const companyTagsArray = companyTagInput
-        .split(",")
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
+      const tagsArray = tagInput.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+      const companyTagsArray = companyTagInput.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
 
       const submissionData = {
         ...payload,
@@ -443,24 +314,15 @@ function EditProblemPage() {
         originContest: payload.originContest || null,
       };
 
-      const { data: updatedProblem } = await axios.put(
-        `${serverUrl}/api/problems/updateproblem/${slug}`,
-        submissionData,
-        { withCredentials: true }
-      );
-      toast.success(
-        isDraft
-          ? `Draft saved: ${updatedProblem.title}`
-          : `Problem "${updatedProblem.title}" updated!`
-      );
+       const { data } = await API.patch(`/problems/${slug}`, submissionData);
+      
+      const updatedProblem = data?.data || data;
+
+      toast.success(isDraft ? `Draft saved: ${updatedProblem.title}` : `Problem "${updatedProblem.title}" updated!`);
 
       if (updatedProblem.slug !== slug) {
-        navigate(`/admin/problems/edit/${updatedProblem.slug}`, {
-          replace: true,
-        });
+        navigate(`/admin/problems/edit/${updatedProblem.slug}`, { replace: true });
       } else {
-        // No slug change, just reload data to be safe
-        // In a real app, we might just update state instead of refetching
         window.location.reload();
       }
     } catch (err) {
@@ -473,529 +335,374 @@ function EditProblemPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await submitToServer(false); // false = publish
+    await submitToServer(false); 
   };
 
   const handleSaveDraft = async () => {
-    await submitToServer(true); // true = save as draft
+    await submitToServer(true); 
   };
 
-  // --- Styles ---
-  const cardStyle = `bg-black border border-orange-700/60 rounded-xl p-6 sm:p-8 shadow-[0_0_20px_rgba(255,69,0,0.2)] transition-all duration-300 hover:shadow-[0_0_35px_rgba(255,69,0,0.3)] hover:border-orange-600/80 mb-6`;
-  const buttonPrimaryStyle = `w-full bg-orange-600 text-white font-bold rounded-lg py-2.5 px-6 text-base shadow-[0_0_15px_rgba(255,69,0,0.4)] transition-all duration-300 transform hover:bg-orange-700 hover:shadow-[0_0_25px_rgba(255,69,0,0.6)] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`;
-  const buttonSecondaryStyle = `bg-transparent border border-orange-600/50 text-orange-500 font-semibold rounded-lg py-1.5 px-3 text-xs shadow-[0_0_10px_rgba(255,69,0,0.2)] transition-all duration-300 transform hover:bg-orange-950/30 hover:border-orange-600/80 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(255,69,0,0.3)] hover:scale-105`;
-  const buttonDangerStyle = `bg-red-900/30 text-red-400 border border-red-600/60 shadow-[0_0_8px_rgba(255,0,0,0.3)] hover:bg-red-800/50 hover:text-red-300 focus:ring-red-500 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-offset-black`;
-  const headingStyle = `text-2xl font-bold text-orange-400 mb-4 [text-shadow:0_0_10px_rgba(255,69,0,0.6)]`;
-  const labelStyle = `block text-sm font-medium text-gray-300 mb-1.5`;
+  // ---  Styles ---
+  const cardStyle = `bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-md mb-8`;
+  const headingStyle = `text-lg font-bold text-white mb-6 border-b border-zinc-800 pb-3 flex items-center gap-2`;
+  
+  const buttonPrimaryStyle = `w-full bg-red-600 text-white font-semibold rounded-md py-2.5 px-6 text-sm transition-colors hover:bg-red-500 shadow-sm disabled:opacity-50`;
+  const buttonSecondaryStyle = `bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium rounded-md py-2 px-4 text-xs transition-colors hover:bg-zinc-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed`;
+  const buttonDangerStyle = `bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-red-400 hover:border-zinc-600 rounded-md p-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500`;
 
-  if (loading) return <LoadingSpinner />; // Full page loader for initial fetch
+  if (loading) return <LoadingSpinner />;
 
   return (
     <>
       <button
         onClick={() => navigate("/admin/problems")}
-        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-black/80 backdrop-blur-md border border-orange-600/50 shadow-[0_0_20px_rgba(255,69,0,0.2)] text-orange-500 font-bold rounded-full py-1.5 px-3 sm:py-2 sm:px-4 text-xs sm:text-sm transition-all duration-300 transform hover:border-orange-600/70 hover:shadow-[0_0_35px_rgba(255,69,0,0.4)] hover:text-orange-400 hover:scale-105"
+        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-300 font-medium rounded-full py-2 px-4 text-xs transition-colors hover:bg-zinc-800 hover:text-white shadow-lg"
       >
-        <FaArrowLeft />
+        <FaArrowLeft size={12}/>
         <span className="hidden sm:inline">Back to Manage</span>
       </button>
 
-      <div className="min-h-screen bg-black text-gray-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20 godfather-bg">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6 gap-4">
-            <h1 className="text-3xl sm:text-4xl font-black text-white [text-shadow:0_0_15px_rgba(255,255,255,0.4),0_0_30px_rgba(255,69,0,0.7)]">
+      <div className="min-h-screen bg-zinc-950 text-zinc-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20 font-sans">
+        
+        <div className="max-w-[1600px] w-full mx-auto">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+            <h1 className="text-3xl font-bold text-white tracking-tight">
               Edit Problem
             </h1>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveDraft}
-                type="button"
-                disabled={saving}
-                className={`${buttonSecondaryStyle} flex items-center gap-2`}
-              >
-                Save Draft
-              </button>
-            </div>
+            <button onClick={handleSaveDraft} type="button" disabled={saving} className={buttonSecondaryStyle}>
+              Save as Draft
+            </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Problem Details */}
-            <div className={cardStyle}>
-              <h2 className={headingStyle}>Problem Details</h2>
+          {/*  GRID LAYOUT: Left (Editor) | Right (Live Preview) */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] xl:grid-cols-[1.5fr_1fr] gap-8 items-start">
+            
+            {/* ======================= */}
+            {/* LEFT COLUMN: THE EDITOR */}
+            {/* ======================= */}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+              
+              {/* --- Problem Details --- */}
+              <div className={cardStyle}>
+                <h2 className={headingStyle}>Problem Overview</h2>
 
-              <GodfatherInput
-                id="title"
-                name="title"
-                label="Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-              />
+                <TUFInput id="title" name="title" label="Problem Title" value={formData.title} onChange={handleInputChange} required />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0">
-                <GodfatherSelect
-                  id="difficulty"
-                  name="difficulty"
-                  label="Difficulty"
-                  value={formData.difficulty}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                  <option value="Super Hard">Super Hard</option>
-                </GodfatherSelect>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-0">
+                  <TUFSelect id="difficulty" name="difficulty" label="Difficulty" value={formData.difficulty} onChange={handleInputChange} required>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                    <option value="Super Hard">Super Hard</option>
+                  </TUFSelect>
 
-                <GodfatherSelect
-                  id="originContest"
-                  name="originContest"
-                  label="Linked to Contest (Optional)"
-                  value={formData.originContest}
-                  onChange={handleInputChange}
-                  disabled={loadingDropdowns}
-                >
-                  <option value="">None (Public Problem)</option>
-                  {upcomingContests.map((contest) => (
-                    <option key={contest._id} value={contest._id}>
-                      {contest.title}
-                    </option>
-                  ))}
-                </GodfatherSelect>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex items-center justify-between gap-3">
-                  <label className={`${labelStyle}`}>
-                    Description (Markdown)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowDescriptionPreview(!showDescriptionPreview)
-                    }
-                    className={`${buttonSecondaryStyle} text-xs`}
-                  >
-                    <FaEye /> {showDescriptionPreview ? "Edit" : "Preview"}
-                  </button>
+                  <TUFSelect id="originContest" name="originContest" label="Linked Contest (Optional)" value={formData.originContest} onChange={handleInputChange} disabled={loadingDropdowns}>
+                    <option value="">None (Public Problem)</option>
+                    {upcomingContests.map((contest) => (
+                      <option key={contest._id} value={contest._id}>{contest.title}</option>
+                    ))}
+                  </TUFSelect>
                 </div>
-                {!showDescriptionPreview ? (
-                  <GodfatherTextarea
-                    id="description"
-                    name="description"
-                    label=""
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={10}
-                    required
-                  />
-                ) : (
-                  <div className="mt-3 p-3 bg-gray-900/50 border border-orange-700/30 rounded problem-description-markdown">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                    >
-                      {formData.description}
-                    </ReactMarkdown>
+
+                <div className="mt-4">
+                  {/* Removed Preview Toggle Button - Just the Textarea now! */}
+                  <TUFTextarea id="description" name="description" label="Description (Markdown)" value={formData.description} onChange={handleInputChange} rows={12} required />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-2 pt-6 border-t border-zinc-800/50">
+                  <div>
+                    <TUFInput id="tags-input" name="tags" label="Problem Tags (comma-separated)" value={tagInput} onChange={handleTagInputChange} />
+                    {!loadingDropdowns && availableTags.length > 0 && (
+                      <p className="text-[10px] text-zinc-500 -mt-3.5">Allowed: {availableTags.slice(0, 4).join(", ")}...</p>
+                    )}
                   </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <GodfatherInput
-                    id="tags-input"
-                    name="tags"
-                    label="Problem Tags (comma-separated)"
-                    value={tagInput}
-                    onChange={handleTagInputChange}
-                  />
-                  {!loadingDropdowns && availableTags.length > 0 && (
-                    <p className="text-xs text-gray-500 -mt-3">
-                      Allowed: {availableTags.slice(0, 3).join(", ")}...
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <GodfatherInput
-                    id="companyTags-input"
-                    name="companyTags"
-                    label="Company Tags (comma-separated)"
-                    value={companyTagInput}
-                    onChange={handleCompanyTagInputChange}
-                  />
-                  {!loadingDropdowns && availableCompanies.length > 0 && (
-                    <p className="text-xs text-gray-500 -mt-3">
-                      Allowed: {availableCompanies.slice(0, 3).join(", ")}...
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 items-end">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="isPremium"
-                    name="isPremium"
-                    checked={formData.isPremium}
-                    onChange={handleInputChange}
-                    className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 mr-2"
-                  />
-                  <label
-                    htmlFor="isPremium"
-                    className="text-sm font-medium text-gray-300 select-none"
-                  >
-                    Mark as Premium Problem
-                  </label>
+                  <div>
+                    <TUFInput id="companyTags-input" name="companyTags" label="Company Tags (comma-separated)" value={companyTagInput} onChange={handleCompanyTagInputChange} />
+                    {!loadingDropdowns && availableCompanies.length > 0 && (
+                      <p className="text-[10px] text-zinc-500 -mt-3.5">Allowed: {availableCompanies.slice(0, 4).join(", ")}...</p>
+                    )}
+                  </div>
                 </div>
 
-                {!formData.originContest && (
-                  <div className="flex items-center gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6 pt-6 border-t border-zinc-800/50">
+                  <div className="flex items-center gap-3 bg-zinc-950 p-3 rounded-md border border-zinc-800">
                     <input
-                      type="checkbox"
-                      id="isPublished"
-                      name="isPublished"
-                      checked={formData.isPublished}
-                      onChange={handleInputChange}
-                      className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 mr-2"
+                      type="checkbox" id="isPremium" name="isPremium" checked={formData.isPremium} onChange={handleInputChange}
+                      className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-red-500 focus:ring-red-500 focus:ring-offset-zinc-950"
                     />
-                    <label
-                      htmlFor="isPublished"
-                      className="text-sm font-medium text-gray-300 select-none"
-                    >
-                      Publish Immediately
+                    <label htmlFor="isPremium" className="text-sm font-medium text-amber-500 select-none">
+                      Mark as Premium Content
                     </label>
                   </div>
-                )}
-              </div>
 
-              <div className="mt-6 pt-4 border-t border-orange-800/30">
-                <div className="flex items-center justify-between mb-3">
-                  <label className={`${labelStyle}`}>
-                    Solution / Editorial (Optional)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowSolutionPreview(!showSolutionPreview)}
-                    className={`${buttonSecondaryStyle} text-xs`}
-                  >
-                    <FaEye /> {showSolutionPreview ? "Edit" : "Preview"}
-                  </button>
-                </div>
-
-                {!showSolutionPreview ? (
-                  <GodfatherTextarea
-                    id="solution"
-                    name="solution"
-                    label=""
-                    value={formData.solution}
-                    onChange={handleInputChange}
-                    rows={6}
-                  />
-                ) : (
-                  <div className="mt-2 p-3 bg-gray-900/50 border border-orange-700/30 rounded problem-description-markdown">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
-                    >
-                      {formData.solution}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Starter Code */}
-            <div className={cardStyle}>
-              <h2 className={headingStyle}>Starter Code</h2>
-              <p className="text-xs text-gray-400 mb-3">
-                Provide starter template(s) per language. The first one will be
-                default.
-              </p>
-              {formData.starterCode.map((sc, index) => (
-                <div
-                  key={index}
-                  className="mb-4 p-3 bg-gray-950/40 border border-gray-700/50 rounded-lg flex flex-col sm:flex-row gap-3 items-start sm:items-end"
-                >
-                  <div className="flex-shrink-0 w-full sm:w-40">
-                    <label
-                      htmlFor={`starterLang-${index}`}
-                      className={`${labelStyle} !text-xs`}
-                    >
-                      Language
-                    </label>
-                    <input
-                      type="text"
-                      id={`starterLang-${index}`}
-                      placeholder="e.g., javascript"
-                      value={sc.language}
-                      onChange={(e) =>
-                        handleStarterCodeChange(
-                          index,
-                          "language",
-                          e.target.value
-                        )
-                      }
-                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs`}
-                      required
-                    />
-                  </div>
-                  <div className="flex-grow w-full">
-                    <label
-                      htmlFor={`starterCode-${index}`}
-                      className={`${labelStyle} !text-xs`}
-                    >
-                      Code
-                    </label>
-                    <textarea
-                      id={`starterCode-${index}`}
-                      value={sc.code}
-                      onChange={(e) =>
-                        handleStarterCodeChange(index, "code", e.target.value)
-                      }
-                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs font-mono min-h-[100px] resize-y`}
-                      rows="5"
-                      required
-                    />
-                  </div>
-                  {formData.starterCode.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeStarterCode(index)}
-                      className={`${buttonDangerStyle} shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0`}
-                      title="Remove Code Snippet"
-                    >
-                      <FaTrashAlt />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={addStarterCode}
-                  className={`${buttonSecondaryStyle} !py-1 !px-3`}
-                >
-                  <FaPlus className="inline mr-1" /> Add Language
-                </button>
-              </div>
-            </div>
-
-             {/* Driver Code (NEW SECTION) */}
-             <div className={cardStyle}>
-              <h2 className={headingStyle}>Driver Code (Hidden)</h2>
-              <p className="text-xs text-gray-400 mb-3">
-                Add the hidden "Main" function for each language. This code should read from stdin, call the user's function, and print to stdout.
-              </p>
-              {formData.driverCode && formData.driverCode.map((dc, index) => (
-                <div
-                  key={index}
-                  className="mb-4 p-3 bg-gray-950/40 border border-gray-700/50 rounded-lg flex flex-col sm:flex-row gap-3 items-start sm:items-end"
-                >
-                  <div className="flex-shrink-0 w-full sm:w-40">
-                    <label
-                      htmlFor={`driverLang-${index}`}
-                      className={`${labelStyle} !text-xs`}
-                    >
-                      Language
-                    </label>
-                    <input
-                      type="text"
-                      id={`driverLang-${index}`}
-                      placeholder="e.g., javascript"
-                      value={dc.language}
-                      onChange={(e) =>
-                        handleDriverCodeChange(
-                          index,
-                          "language",
-                          e.target.value
-                        )
-                      }
-                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs`}
-                      required
-                    />
-                  </div>
-                  <div className="flex-grow w-full">
-                    <label
-                      htmlFor={`driverCode-${index}`}
-                      className={`${labelStyle} !text-xs`}
-                    >
-                      Driver Code
-                    </label>
-                    <textarea
-                      id={`driverCode-${index}`}
-                      value={dc.code}
-                      onChange={(e) =>
-                        handleDriverCodeChange(index, "code", e.target.value)
-                      }
-                      className={`w-full p-2 bg-gray-900/60 text-white rounded border border-gray-600/50 focus:outline-none focus:border-orange-600/70 focus:shadow-[0_0_10px_rgba(255,100,0,0.3)] text-xs font-mono min-h-[100px] resize-y`}
-                      rows="5"
-                      required
-                      placeholder="// Read input, call user function, print output"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeDriverCode(index)}
-                    className={`${buttonDangerStyle} shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0`}
-                    title="Remove Driver Code"
-                  >
-                    <FaTrashAlt />
-                  </button>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={addDriverCode}
-                  className={`${buttonSecondaryStyle} !py-1 !px-3`}
-                >
-                  <FaPlus className="inline mr-1" /> Add Driver Code
-                </button>
-              </div>
-            </div>
-
-            {/* Test Cases */}
-            <div className={`${cardStyle} p-6 mt-8`}>
-              <h2 className={headingStyle}>
-                {" "}
-                Manage Test Cases ({testCases.length}){" "}
-              </h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2 mb-6 border-b border-orange-800/30 pb-4">
-                {testCases.map((tc, index) => (
-                  <div
-                    key={tc._id}
-                    className="p-3 bg-gray-950/50 border border-gray-700/60 rounded-lg flex justify-between items-start gap-4"
-                  >
-                    <div className="flex-grow text-xs space-y-1 overflow-hidden">
-                      <p className="font-semibold text-gray-400">
-                        {" "}
-                        TC #{index + 1}{" "}
-                        {tc.isSample && (
-                          <span className="text-yellow-400 font-bold">
-                            (Sample)
-                          </span>
-                        )}
-                      </p>
-                      <p>
-                        <strong className="text-gray-500">Input:</strong>{" "}
-                        <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
-                          {tc.input}
-                        </code>
-                      </p>
-                      <p>
-                        <strong className="text-gray-500">Output:</strong>{" "}
-                        <code className="block whitespace-pre-wrap break-words bg-black/40 p-1.5 rounded text-orange-300/80 text-[11px]">
-                          {tc.expectedOutput}
-                        </code>
-                      </p>
+                  {!formData.originContest && (
+                    <div className="flex items-center gap-3 bg-zinc-950 p-3 rounded-md border border-zinc-800">
+                      <input
+                        type="checkbox" id="isPublished" name="isPublished" checked={formData.isPublished} onChange={handleInputChange}
+                        className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-red-500 focus:ring-red-500 focus:ring-offset-zinc-950"
+                      />
+                      <label htmlFor="isPublished" className="text-sm font-medium text-emerald-400 select-none">
+                        Publish to General Public
+                      </label>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTestCase(tc._id)}
-                      disabled={saving}
-                      className={`${buttonDangerStyle} shrink-0`}
-                      title="Delete Test Case"
-                    >
-                      {" "}
-                      <FaTrashAlt />{" "}
+                  )}
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-zinc-800/50">
+                  {/* Removed Preview Toggle Button - Just the Textarea now! */}
+                  <TUFTextarea id="solution" name="solution" label="Solution / Editorial (Optional)" value={formData.solution} onChange={handleInputChange} rows={8} />
+                </div>
+              </div>
+
+              {/* --- Starter Code --- */}
+              <div className={cardStyle}>
+                <h2 className={headingStyle}><FaLaptopCode className="text-red-500"/> Starter Code</h2>
+                <p className="text-xs text-zinc-500 mb-5">Provide boilerplate templates. The first language listed will be the default.</p>
+                
+                {formData.starterCode.map((sc, index) => (
+                  <div key={index} className="mb-5 p-4 bg-zinc-950 border border-zinc-800 rounded-lg flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                    <div className="flex-shrink-0 w-full sm:w-48">
+                      <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">Language</label>
+                      <input
+                        type="text" placeholder="e.g., javascript" value={sc.language} onChange={(e) => handleStarterCodeChange(index, "language", e.target.value)} required
+                        className="w-full p-2 bg-zinc-900 text-zinc-200 rounded border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm"
+                      />
+                    </div>
+                    <div className="flex-grow w-full">
+                      <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">Code Boilerplate</label>
+                      <textarea
+                        value={sc.code} onChange={(e) => handleStarterCodeChange(index, "code", e.target.value)} required rows="5"
+                        className="w-full p-3 bg-zinc-900 text-zinc-300 rounded border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-xs font-mono resize-y custom-scrollbar"
+                      />
+                    </div>
+                    {formData.starterCode.length > 1 && (
+                      <button type="button" onClick={() => removeStarterCode(index)} className={`${buttonDangerStyle} sm:mb-1`} title="Remove Code Snippet">
+                        <FaTrashAlt />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={addStarterCode} className={buttonSecondaryStyle}>
+                  <FaPlus className="inline mr-1.5" /> Add Language
+                </button>
+              </div>
+
+              {/* --- Driver Code --- */}
+              <div className={cardStyle}>
+                <h2 className={headingStyle}>Backend Driver Code</h2>
+                <p className="text-xs text-zinc-500 mb-5 leading-relaxed max-w-2xl">
+                  This is the hidden execution wrapper. It must read test cases from standard input, call the user's function, and print the output to standard output. Do not show this to the user.
+                </p>
+                
+                {formData.driverCode && formData.driverCode.map((dc, index) => (
+                  <div key={index} className="mb-5 p-4 bg-zinc-950 border border-zinc-800 rounded-lg flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                    <div className="flex-shrink-0 w-full sm:w-48">
+                      <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">Language</label>
+                      <input
+                        type="text" placeholder="e.g., javascript" value={dc.language} onChange={(e) => handleDriverCodeChange(index, "language", e.target.value)} required
+                        className="w-full p-2 bg-zinc-900 text-zinc-200 rounded border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm"
+                      />
+                    </div>
+                    <div className="flex-grow w-full">
+                      <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">Driver Logic</label>
+                      <textarea
+                        value={dc.code} onChange={(e) => handleDriverCodeChange(index, "code", e.target.value)} required rows="5" placeholder="// Read stdin, execute, write stdout"
+                        className="w-full p-3 bg-zinc-900 text-zinc-300 rounded border border-zinc-700 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-xs font-mono resize-y custom-scrollbar"
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeDriverCode(index)} className={`${buttonDangerStyle} sm:mb-1`} title="Remove Driver Code">
+                      <FaTrashAlt />
                     </button>
                   </div>
                 ))}
-                {!loading && testCases.length === 0 && (
-                  <p className="text-gray-500 text-center italic">
-                    {" "}
-                    No test cases added yet.{" "}
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-gray-950/30 p-4 rounded-lg border border-gray-700/40">
-                <h3 className="text-lg font-semibold text-white mb-3">
-                  {" "}
-                  Add New Test Case{" "}
-                </h3>
-                <GodfatherTextarea
-                  id="new-input"
-                  name="input"
-                  label="Input"
-                  value={newTestCase.input}
-                  onChange={handleNewTestCaseChange}
-                  rows={3}
-                  // required
-                />
-                <GodfatherTextarea
-                  id="new-output"
-                  name="expectedOutput"
-                  label="Expected Output"
-                  value={newTestCase.expectedOutput}
-                  onChange={handleNewTestCaseChange}
-                  rows={3}
-                  // required
-                />
-                <div className="mb-4 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="new-isSample"
-                    name="isSample"
-                    checked={newTestCase.isSample}
-                    onChange={handleNewTestCaseChange}
-                    className="form-checkbox h-4 w-4 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 focus:ring-offset-0 focus:ring-offset-black"
-                  />
-                  <label
-                    htmlFor="new-isSample"
-                    className="text-sm font-medium text-gray-300 select-none"
-                  >
-                    {" "}
-                    Mark as Sample (Visible to User){" "}
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddTestCase}
-                  disabled={saving}
-                  className={`${buttonSecondaryStyle} !w-auto`}
-                >
-                  {" "}
-                  {saving ? (
-                    "Adding..."
-                  ) : (
-                    <>
-                      <FaPlus className="inline mr-1" /> Add Test Case
-                    </>
-                  )}{" "}
+                <button type="button" onClick={addDriverCode} className={buttonSecondaryStyle}>
+                  <FaPlus className="inline mr-1.5" /> Add Driver Code
                 </button>
               </div>
-            </div>
 
-            {/* Submit */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="submit"
-                disabled={
-                  saving || loadingDropdowns
-                }
-                className={`${buttonPrimaryStyle} sm:col-span-2`}
-              >
-                {saving ? (
-                  "Saving..."
-                ) : (
-                  <>
-                    <FaSave className="inline mr-2" /> Save Changes
-                  </>
+              {/* --- Test Cases --- */}
+              <div className={cardStyle}>
+                <h2 className={headingStyle}>Test Cases ({testCases.length})</h2>
+                
+                {/* Existing Test Cases */}
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 mb-8 custom-scrollbar">
+                  {testCases.map((tc, index) => (
+                    <div key={tc._id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-lg flex justify-between items-start gap-4">
+                      <div className="flex-grow space-y-3 overflow-hidden">
+                        <p className="text-sm font-bold text-zinc-300">
+                          Case #{index + 1} {tc.isSample && <span className="text-emerald-400 ml-2 text-xs">(Sample)</span>}
+                        </p>
+                        <div>
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Input</p>
+                          <pre className="whitespace-pre-wrap bg-zinc-900 p-2.5 rounded-md border border-zinc-800 text-zinc-300 text-xs font-mono custom-scrollbar">
+                            {tc.input}
+                          </pre>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Expected Output</p>
+                          <pre className="whitespace-pre-wrap bg-zinc-900 p-2.5 rounded-md border border-zinc-800 text-zinc-300 text-xs font-mono custom-scrollbar">
+                            {tc.expectedOutput}
+                          </pre>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => handleDeleteTestCase(tc._id)} disabled={saving} className={buttonDangerStyle} title="Delete Test Case">
+                        <FaTrashAlt size={14}/>
+                      </button>
+                    </div>
+                  ))}
+                  {!loading && testCases.length === 0 && (
+                    <div className="p-8 border border-dashed border-zinc-800 rounded-lg text-center">
+                      <p className="text-zinc-500 text-sm">No test cases added yet.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add New Test Case Form */}
+                <div className="bg-zinc-950 p-5 rounded-lg border border-zinc-800">
+                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wide">Add New Test Case</h3>
+                  <div className="space-y-4">
+                      <TUFTextarea id="new-input" name="input" label="Standard Input" value={newTestCase.input} onChange={handleNewTestCaseChange} rows={3} />
+                      <TUFTextarea id="new-output" name="expectedOutput" label="Expected Standard Output" value={newTestCase.expectedOutput} onChange={handleNewTestCaseChange} rows={3} />
+                      
+                      <div className="flex items-center gap-3 pt-2">
+                          <input
+                          type="checkbox" id="new-isSample" name="isSample" checked={newTestCase.isSample} onChange={handleNewTestCaseChange}
+                          className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-red-500 focus:ring-red-500 focus:ring-offset-zinc-950"
+                          />
+                          <label htmlFor="new-isSample" className="text-sm font-medium text-zinc-300 select-none">
+                              Mark as Sample (Visible in Problem Description)
+                          </label>
+                      </div>
+
+                      <button type="button" onClick={handleAddTestCase} disabled={saving} className={`${buttonSecondaryStyle} mt-4`}>
+                          {saving ? "Processing..." : <><FaPlus className="inline mr-1.5" /> Save Test Case</>}
+                      </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* --- Bottom Submit Actions --- */}
+              <div className="mb-10 flex flex-col sm:flex-row items-center gap-4">
+                <button type="submit" disabled={saving || loadingDropdowns} className={buttonPrimaryStyle}>
+                  {saving ? "Saving Changes..." : <><FaSave className="inline mr-2" /> Publish Updates</>}
+                </button>
+                <button type="button" onClick={handleSaveDraft} disabled={saving || loadingDropdowns} className={`${buttonSecondaryStyle} w-full sm:w-auto py-2.5`}>
+                  Save as Draft
+                </button>
+              </div>
+            </form>
+
+            {/* ===================================== */}
+            {/* RIGHT COLUMN: STICKY LIVE PREVIEW     */}
+            {/* ===================================== */}
+            <div className="hidden lg:block sticky top-28 h-[calc(100vh-8rem)] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl custom-scrollbar">
+              
+              {/* Preview Header */}
+              <div className="p-4 border-b border-zinc-800 bg-zinc-950/80 sticky top-0 z-10 backdrop-blur-md flex justify-between items-center">
+                <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                  <FaEye className="text-emerald-500" size={16} /> Live Preview
+                </h2>
+                <span className="text-[10px] text-zinc-500 font-medium">Updates Automatically</span>
+              </div>
+
+              {/* Preview Body */}
+              <div className="p-8 space-y-8">
+                
+                {/* Problem Header Preview */}
+                <div>
+                  <h1 className="text-3xl font-bold text-zinc-100 mb-4 tracking-tight">
+                    {formData.title || "Untitled Problem"}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`px-3 py-1 text-xs font-bold rounded-md border ${getDifficultyColor(formData.difficulty)}`}>
+                      {formData.difficulty}
+                    </span>
+                    {formData.isPremium && (
+                      <span className="px-3 py-1 text-xs font-bold rounded-md border border-amber-500/20 bg-amber-500/10 text-amber-500">
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tags Preview */}
+                {(tagInput.trim() || companyTagInput.trim()) && (
+                  <div className="flex flex-wrap gap-2">
+                    {tagInput.split(',').map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                      <span key={`tag-${i}`} className="px-2.5 py-1 bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-md text-[11px] font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                    {companyTagInput.split(',').map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                      <span key={`comp-${i}`} className="px-2.5 py-1 bg-blue-900/10 border border-blue-500/20 text-blue-400 rounded-md text-[11px] font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                disabled={saving || loadingDropdowns}
-                className={`${buttonSecondaryStyle} sm:col-span-1`}
-              >
-                Save as Draft
-              </button>
+
+                {/* Description Preview */}
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 border-b border-zinc-800 pb-2">
+                    Description
+                  </h3>
+                  <div className="problem-description-markdown text-zinc-300 leading-relaxed text-sm">
+                    {formData.description ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {formData.description}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-zinc-600 italic">Start typing in the description editor to see the preview here...</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 🔥 NEW: Sample Test Cases Preview */}
+                {testCases.filter(tc => tc.isSample).length > 0 && (
+                  <div className="pt-2">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 border-b border-zinc-800 pb-2">
+                      Examples
+                    </h3>
+                    <div className="space-y-4">
+                      {testCases.filter(tc => tc.isSample).map((tc, index) => (
+                        <div key={`preview-tc-${index}`} className="bg-zinc-950/80 border border-zinc-800 rounded-lg p-4">
+                          <p className="text-xs font-bold text-zinc-200 mb-3">Example {index + 1}:</p>
+                          <div className="mb-3">
+                            <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block mb-1">Input:</span>
+                            <div className="font-mono text-sm text-zinc-300 bg-zinc-900 p-2 rounded-md border border-zinc-800/80 whitespace-pre-wrap">
+                              {tc.input}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block mb-1">Output:</span>
+                            <div className="font-mono text-sm text-zinc-300 bg-zinc-900 p-2 rounded-md border border-zinc-800/80 whitespace-pre-wrap">
+                              {tc.expectedOutput}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Editorial/Solution Preview */}
+                {formData.solution && (
+                  <div className="pt-4">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 border-b border-zinc-800 pb-2">
+                      Solution / Editorial
+                    </h3>
+                    <div className="problem-description-markdown text-zinc-300 leading-relaxed text-sm">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {formData.solution}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+              </div>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </>

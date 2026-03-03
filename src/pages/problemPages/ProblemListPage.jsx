@@ -1,54 +1,38 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { serverUrl } from "../../App";
-import {
-  FaArrowLeft,
-  FaRandom,
-  FaSearch,
-  FaTimes,
-  FaBuilding,
-} from "react-icons/fa";
+import { FaArrowLeft, FaRandom, FaSearch, FaBuilding ,FaTimes} from "react-icons/fa";
 import { BsTagsFill } from "react-icons/bs";
 import { IoIosLock } from "react-icons/io";
+import API from "../../api/axios.js";
 
-// --- Loading Spinner --- (Enhanced Glow)
+// --- Loading Spinner --- 
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen bg-black">
-    <div
-      className="w-24 h-24 border-[10px] border-t-transparent border-orange-600 rounded-full animate-spin
-                    [box-shadow:0_0_40px_rgba(255,69,0,0.8),inset_0_0_10px_rgba(255,69,0,0.5)]"
-    ></div>
+  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+    <div className="w-12 h-12 border-4 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
   </div>
 );
 
-// --- Difficulty Badge --- (Slightly enhanced glow)
+// --- Difficulty Badge --- (Clean, flat translucent style)
 const DifficultyBadge = ({ difficulty }) => {
   let colorClasses = "";
-  // Sharper glows, slightly bolder text
   if (difficulty === "Easy") {
-    colorClasses =
-      "bg-green-700/20 text-green-300 border-green-600/60 shadow-[0_0_12px_rgba(0,255,0,0.4)]";
+    colorClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
   } else if (difficulty === "Medium") {
-    colorClasses =
-      "bg-yellow-600/20 text-yellow-300 border-yellow-500/60 shadow-[0_0_12px_rgba(255,215,0,0.4)]";
+    colorClasses = "bg-amber-500/10 text-amber-400 border-amber-500/20";
   } else if (difficulty === "Hard") {
-    colorClasses =
-      "bg-red-700/20 text-red-400 border-red-600/60 shadow-[0_0_12px_rgba(255,0,0,0.4)]";
+    colorClasses = "bg-red-500/10 text-red-400 border-red-500/20";
   } else if (difficulty === "Super Hard") {
-    colorClasses =
-      "bg-purple-700/20 text-purple-300 border-purple-600/60 shadow-[0_0_12px_rgba(168,85,247,0.5)]";
+    colorClasses = "bg-purple-500/10 text-purple-400 border-purple-500/20";
   }
   return (
-    <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${colorClasses}`}
-    >
+    <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold border ${colorClasses}`}>
       {difficulty}
     </span>
   );
 };
+
 // --- Main Problem List Page Component ---
 function ProblemListPage() {
   const [problems, setProblems] = useState([]);
@@ -74,17 +58,16 @@ function ProblemListPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (difficultyFilter !== "All")
-        params.append("difficulty", difficultyFilter);
-      if (selectedTags.length > 0)
-        params.append("tags", selectedTags.join(","));
+      if (difficultyFilter !== "All") params.append("difficulty", difficultyFilter);
+      if (selectedTags.length > 0) params.append("tags", selectedTags.join(","));
       if (searchQuery.trim()) params.append("search", searchQuery.trim());
       if (selectedCompany !== "All") params.append("company", selectedCompany);
 
-      const endpoint = `${serverUrl}/api/problems/getallproblem?${params.toString()}`;
-      const { data } = await axios.get(endpoint, { withCredentials: true });
-      setProblems(data);
+      const { data } = await API.get(`/problems?${params.toString()}`);
+      const problemsArray = data?.data || data || [];
+      setProblems(problemsArray);
     } catch (err) {
+      console.error("Fetch Error:", err);
       toast.error(err.response?.data?.message || "Failed to fetch problems.");
       setProblems([]);
     } finally {
@@ -97,10 +80,9 @@ function ProblemListPage() {
     const fetchFilters = async () => {
       try {
         setLoadingTags(true);
-        const { data } = await axios.get(`${serverUrl}/api/tags/problems`, {
-          withCredentials: true,
-        });
-        setAvailableTags(data);
+        const { data } = await API.get("/tags/problems");
+        const tagsArray = data?.data || data || [];
+        setAvailableTags(tagsArray);
       } catch (err) {
         toast.error("Failed to load filter tags.");
         setAvailableTags([]);
@@ -110,10 +92,9 @@ function ProblemListPage() {
 
       try {
         setLoadingCompanies(true);
-        const { data } = await axios.get(`${serverUrl}/api/tags/companies`, {
-          withCredentials: true,
-        });
-        setAvailableCompanies(["All", ...data.sort()]);
+        const { data } = await API.get("/tags/companies");
+        const companyArray = data?.data || data || [];
+        setAvailableCompanies(["All", ...companyArray.sort()]);
       } catch (err) {
         toast.error("Failed to load company tags.");
         setAvailableCompanies(["All"]);
@@ -126,34 +107,20 @@ function ProblemListPage() {
 
   // --- Trigger fetchProblems on Filter Change ---
   useEffect(() => {
-    if (debounceTimeout) {
-      clearTimeout(debounceTimeout);
-    }
+    if (debounceTimeout) clearTimeout(debounceTimeout);
     const newTimeout = setTimeout(() => {
       fetchProblems();
     }, 300);
     setDebounceTimeout(newTimeout);
     return () => clearTimeout(newTimeout);
-  }, [
-    difficultyFilter,
-    selectedTags,
-    searchQuery,
-    selectedCompany,
-    fetchProblems,
-  ]);
+  }, [difficultyFilter, selectedTags, searchQuery, selectedCompany, fetchProblems]);
 
   // --- Close Dropdowns ---
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        tagDropdownRef.current &&
-        !tagDropdownRef.current.contains(event.target)
-      )
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target))
         setShowTagDropdown(false);
-      if (
-        companyDropdownRef.current &&
-        !companyDropdownRef.current.contains(event.target)
-      )
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target))
         setShowCompanyDropdown(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -162,44 +129,34 @@ function ProblemListPage() {
 
   // --- Event Handlers ---
   const handleTagSelect = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
   };
-  const handleDifficultySelect = (diff) => {
-    setDifficultyFilter(diff);
-  };
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
+  const handleDifficultySelect = (diff) => setDifficultyFilter(diff);
+  const handleSearchChange = (e) => setSearchQuery(e.target.value);
   const handleCompanySelect = (company) => {
     setSelectedCompany(company);
     setShowCompanyDropdown(false);
   };
-  
-  //  PREMIUM CLICK INTERCEPTOR 
-  const handleProblemClick = (e, prob) => {
-    // If NOT premium, let them pass
-    if (!prob.isPremium) return;
 
-    // If User NOT logged in -> Login
+  // PREMIUM CLICK INTERCEPTOR
+  const handleProblemClick = (e, prob) => {
+    if (!prob.isPremium) return;
     if (!userData) {
       e.preventDefault();
       toast.info("Login required to access Premium content.");
       navigate("/login");
       return;
     }
-
-    // Check Plan
     const isPaid = ["Warrior", "Gladiator"].includes(userData.subscriptionPlan);
     const isAdmin = ["admin", "master"].includes(userData.role);
 
     if (!isPaid && !isAdmin) {
-      e.preventDefault(); // STOP NAVIGATION
+      e.preventDefault();
       toast.warning("🔒 Premium Content! Upgrade to unlock.");
-      navigate("/premium"); // REDIRECT TO PAY
+      navigate("/premium");
     }
   };
+
   const handlePickRandom = () => {
     if (problems.length > 0) {
       const i = Math.floor(Math.random() * problems.length);
@@ -211,270 +168,179 @@ function ProblemListPage() {
 
   const sortedTags = availableTags;
 
-  const initialLoading =
-    loading &&
-    problems.length === 0 &&
-    availableTags.length === 0 &&
-    availableCompanies.length <= 1;
+  const initialLoading = loading && problems.length === 0 && availableTags.length === 0 && availableCompanies.length <= 1;
   if (initialLoading) return <LoadingSpinner />;
 
-  // --- Godfather Theme Specific Styles ---
-  const filterContainerStyle = `mb-6 p-4 bg-black border border-orange-700/50 rounded-xl
-                                 shadow-[0_0_30px_rgba(255,69,0,0.2),inset_0_1px_4px_rgba(0,0,0,0.7)] space-y-4`; // Added inset shadow
-  // More defined filter buttons
-  const filterButtonStyle = `px-3 py-1 bg-gradient-to-b from-gray-900 to-black border border-gray-700/60 text-gray-400 text-xs font-semibold rounded
-                              hover:bg-gray-800/80 hover:text-orange-400 hover:border-orange-600/60
-                              transition-colors duration-200 flex items-center gap-1.5
-                              shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]`;
-  // Stronger active filter glow
-  const filterButtonActiveStyle = `!bg-orange-900/40 !border-orange-500/80 !text-orange-300
-                                     !shadow-[inset_0_1px_2px_rgba(255,100,0,0.4),0_0_12px_rgba(255,69,0,0.6)]`;
-  // Darker dropdown with intense shadow
-  const dropdownStyle = `absolute top-full left-0 mt-1.5 z-20 w-64 max-h-60 overflow-y-auto
-                           bg-gradient-to-b from-black via-gray-950 to-black
-                           border border-orange-600/80 rounded-lg
-                           shadow-[0_10px_50px_rgba(255,69,0,0.5)] p-2 space-y-0.5`;
-  // Main table container with imposing shadow
-  const tableContainerStyle = `bg-black border border-orange-700/60 shadow-[0_0_50px_rgba(255,69,0,0.35)]
-                                rounded-xl overflow-hidden transition-all duration-300 relative`;
-  // Darker table header, sharper text shadow
-  const tableHeaderStyle = `p-3 text-sm font-bold text-orange-400 uppercase tracking-wider
-                             [text-shadow:0_0_12px_rgba(255,69,0,0.7)]`;
-  // More pronounced gradient row hover
-  const tableRowStyle = `border-t border-orange-800/40 transition-colors duration-200
-                          hover:bg-gradient-to-r hover:from-black hover:via-orange-950/30 hover:to-black`;
-  const tableCellStyle = `p-3 text-sm`;
-  // Sharper title link glow
-  const titleLinkStyle = `text-white font-semibold hover:text-orange-300 hover:underline
-                           transition-colors [text-shadow:0_0_8px_rgba(255,255,255,0.4)]`;
-  // Darker tag span
-  const tagSpanStyle = `inline-block px-2.5 py-1 bg-black border border-orange-700/60 text-gray-300
-                       rounded shadow-[0_0_8px_rgba(255,100,0,0.3)]
-                       text-[11px] font-semibold whitespace-nowrap
-                       transition-all duration-200
-                       hover:bg-orange-950/40 hover:border-orange-600/80 hover:text-orange-300 hover:shadow-[0_0_12px_rgba(255,100,0,0.4)]`;
+  // ---  Theme Specific Styles ---
+  const filterContainerStyle = `mb-6 p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col gap-4`;
+  const filterButtonStyle = `px-3 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-medium rounded-md hover:bg-zinc-700 hover:text-zinc-100 transition-colors duration-200 flex items-center gap-2`;
+  const filterButtonActiveStyle = `!bg-zinc-100 !text-zinc-900 !border-zinc-100 font-semibold`;
+  
+  const dropdownStyle = `absolute top-full left-0 mt-2 z-20 w-64 max-h-60 overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl p-1.5 space-y-0.5 custom-scrollbar`;
+  const tableContainerStyle = `bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden relative`;
+  const tableHeaderStyle = `p-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-800`;
+  const tableRowStyle = `border-b border-zinc-800/50 transition-colors duration-150 hover:bg-zinc-800/50`;
+  const tableCellStyle = `p-4 text-sm`;
+  const titleLinkStyle = `text-zinc-100 font-medium hover:text-red-400 transition-colors`;
+  const tagSpanStyle = `inline-block px-2.5 py-1 bg-zinc-800 border border-zinc-700/50 text-zinc-300 rounded-md text-[10px] font-medium whitespace-nowrap`;
 
   return (
     <>
-      {/* Enhanced Back Button */}
+      {/* Clean Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className={`fixed top-24 left-4 sm:left-6 z-40 ${filterButtonStyle} !py-1.5 !px-3 sm:!px-4 !rounded-full !text-orange-500 hover:!text-orange-300 !border-orange-700/60 hover:!border-orange-500 hover:!shadow-[0_0_20px_rgba(255,69,0,0.6)]`}
+        className={`fixed top-24 left-4 sm:left-6 z-40 px-4 py-2 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 text-zinc-300 text-sm font-medium rounded-full hover:bg-zinc-800 hover:text-white transition-all flex items-center gap-2 shadow-lg`}
       >
-        {" "}
-        <FaArrowLeft /> <span className="hidden sm:inline">Back</span>{" "}
+        <FaArrowLeft size={12} /> <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="min-h-screen bg-black text-gray-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20">
+      <div className="min-h-screen bg-zinc-950 text-zinc-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20 font-sans">
         <div className="max-w-screen-xl mx-auto">
+          
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <h1 className="text-4xl font-black text-white [text-shadow:0_0_15px_rgba(255,255,255,0.4),0_0_30px_rgba(255,69,0,0.7)]">
-              {" "}
-              Problemset{" "}
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              Problemset
             </h1>
-            {/* Enhanced Daily Problem Card */}
-            <div className="w-full md:w-auto bg-gradient-to-br from-black via-gray-950 to-black border border-orange-700/50 shadow-[0_0_25px_rgba(255,69,0,0.4)] rounded-xl p-3 px-4 flex items-center justify-between gap-4 md:min-w-[300px]">
+            
+            {/* Minimal Daily Problem Card */}
+            <div className="w-full md:w-auto bg-zinc-900 border border-zinc-800 rounded-xl p-3 px-5 flex items-center justify-between gap-6 md:min-w-[320px]">
               <div>
-                <p className="text-sm text-orange-400 font-semibold [text-shadow:0_0_10px_rgba(255,69,0,0.5)]">
+                <p className="text-xs text-red-400 font-semibold uppercase tracking-wider mb-0.5">
                   Daily Challenge
                 </p>
                 <p className="text-white text-sm font-medium truncate">
                   Placeholder Problem Title
                 </p>
               </div>
-              <button className="bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-md hover:bg-orange-700 transition-colors shadow-[0_0_15px_rgba(255,69,0,0.6)] hover:shadow-[0_0_25px_rgba(255,69,0,0.8)] transform hover:scale-105">
-                {" "}
-                Solve{" "}
+              <button className="bg-red-600 text-white text-xs font-semibold px-4 py-1.5 rounded-md hover:bg-red-500 transition-colors">
+                Solve
               </button>
             </div>
           </div>
 
-          {/* --- Enhanced & Responsive Filter Section --- */}
+          {/* --- Filter Section --- */}
           <div className={filterContainerStyle}>
             {/* Row 1: Difficulty & Pick Random */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-gray-400 mr-1 sm:mr-2 shrink-0">
-                Difficulty:
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-zinc-500 mr-1 shrink-0">
+                Difficulty
               </span>
-              <div className="flex flex-wrap items-center gap-2 flex-grow justify-start">
+              <div className="flex flex-wrap items-center gap-2 flex-grow">
                 {["All", "Easy", "Medium", "Hard", "Super Hard"].map((diff) => (
                   <button
                     key={diff}
                     onClick={() => handleDifficultySelect(diff)}
-                    className={`${filterButtonStyle} ${
-                      difficultyFilter === diff ? filterButtonActiveStyle : ""
-                    }`}
+                    className={`${filterButtonStyle} ${difficultyFilter === diff ? filterButtonActiveStyle : ""}`}
                   >
-                    {" "}
-                    {diff}{" "}
+                    {diff}
                   </button>
                 ))}
               </div>
               <button
                 onClick={handlePickRandom}
-                className={`${filterButtonStyle} ml-auto sm:ml-4 !bg-purple-950/50 !border-purple-600/60 !text-purple-300 hover:!bg-purple-800/60 hover:!text-purple-200 hover:!border-purple-500 hover:!shadow-[0_0_10px_rgba(168,85,247,0.5)] shrink-0`}
+                className={`${filterButtonStyle} ml-auto shrink-0 hover:!bg-zinc-800 hover:!text-white`}
               >
-                {" "}
-                <FaRandom /> <span className="hidden sm:inline">
-                  Pick One
-                </span>{" "}
+                <FaRandom size={12} /> <span className="hidden sm:inline">Pick Random</span>
               </button>
             </div>
 
-            {/* Row 2: Search, Tags, Company (Stacks on mobile) */}
-            <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 pt-4 border-t border-gray-800/70">
-              {/* Search: Full width on mobile */}
-              <div className="relative w-full md:w-auto md:flex-grow lg:flex-grow-0 lg:w-60">
+            {/* Row 2: Search, Tags, Company */}
+            <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3 pt-3 border-t border-zinc-800/60">
+              {/* Search */}
+              <div className="relative w-full md:w-auto md:flex-grow lg:flex-grow-0 lg:w-64">
                 <input
                   type="text"
-                  placeholder="Search title..."
+                  placeholder="Search problems..."
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full pl-8 pr-3 py-1.5 bg-gray-950 text-xs text-white rounded border border-gray-700 focus:outline-none focus:border-orange-500 focus:shadow-[0_0_18px_rgba(255,69,0,0.5)] transition-all"
+                  className="w-full pl-9 pr-3 py-2 bg-zinc-950 text-sm text-white rounded-md border border-zinc-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder-zinc-600"
                 />
-                <FaSearch
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500"
-                  size={12}
-                />
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={12} />
               </div>
 
-              {/* Tags: Full width button on mobile */}
+              {/* Tags Dropdown */}
               <div className="relative w-full md:w-auto" ref={tagDropdownRef}>
                 <button
                   onClick={() => setShowTagDropdown(!showTagDropdown)}
                   disabled={loadingTags || sortedTags.length === 0}
-                  className={`w-full md:w-auto ${filterButtonStyle} justify-center disabled:opacity-60 disabled:cursor-not-allowed ${
-                    selectedTags.length > 0 ? filterButtonActiveStyle : ""
-                  }`}
+                  className={`w-full md:w-auto py-2 ${filterButtonStyle} justify-center disabled:opacity-50 ${selectedTags.length > 0 ? "!bg-zinc-800 !text-white !border-zinc-600" : ""}`}
                 >
-                  {" "}
-                  <BsTagsFill /> Tags{" "}
-                  {selectedTags.length > 0 && `(${selectedTags.length})`}{" "}
-                  <span
-                    className={`text-[10px] transition-transform duration-200 ${
-                      showTagDropdown ? "rotate-180" : ""
-                    }`}
-                  >
-                    ▼
-                  </span>{" "}
+                  <BsTagsFill /> Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+                  <span className={`text-[10px] ml-1 transition-transform ${showTagDropdown ? "rotate-180" : ""}`}>▼</span>
                 </button>
                 {showTagDropdown && !loadingTags && sortedTags.length > 0 && (
                   <div className={`${dropdownStyle} md:absolute md:left-0`}>
-                    {" "}
                     {sortedTags.map((tag) => (
-                      <label
-                        key={tag}
-                        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-orange-800/40 cursor-pointer transition-colors"
-                      >
-                        {" "}
+                      <label key={tag} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-zinc-800 cursor-pointer transition-colors">
                         <input
                           type="checkbox"
                           checked={selectedTags.includes(tag)}
                           onChange={() => handleTagSelect(tag)}
-                          className="form-checkbox h-3.5 w-3.5 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-2 focus:ring-orange-600/60 focus:ring-offset-0 focus:ring-offset-black"
-                        />{" "}
-                        <span className="text-xs text-gray-300 capitalize">
-                          {tag.replace(/-/g, " ")}
-                        </span>{" "}
+                          className="w-3.5 h-3.5 rounded bg-zinc-950 border-zinc-700 text-red-500 focus:ring-red-500 focus:ring-offset-zinc-900"
+                        />
+                        <span className="text-sm text-zinc-300 capitalize">{tag.replace(/-/g, " ")}</span>
                       </label>
-                    ))}{" "}
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Company: Full width button on mobile */}
-              <div
-                className="relative w-full md:w-auto"
-                ref={companyDropdownRef}
-              >
+              {/* Company Dropdown */}
+              <div className="relative w-full md:w-auto" ref={companyDropdownRef}>
                 <button
                   onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
                   disabled={loadingCompanies || availableCompanies.length <= 1}
-                  className={`w-full md:w-auto ${filterButtonStyle} justify-center disabled:opacity-60 disabled:cursor-not-allowed ${
-                    selectedCompany !== "All" ? filterButtonActiveStyle : ""
-                  }`}
+                  className={`w-full md:w-auto py-2 ${filterButtonStyle} justify-center disabled:opacity-50 ${selectedCompany !== "All" ? "!bg-zinc-800 !text-white !border-zinc-600" : ""}`}
                 >
-                  {" "}
-                  <FaBuilding />{" "}
-                  {selectedCompany === "All" ? (
-                    "Company"
-                  ) : (
-                    <span className="capitalize">{selectedCompany}</span>
-                  )}{" "}
-                  <span
-                    className={`text-[10px] transition-transform duration-200 ${
-                      showCompanyDropdown ? "rotate-180" : ""
-                    }`}
-                  >
-                    ▼
-                  </span>{" "}
+                  <FaBuilding /> {selectedCompany === "All" ? "Company" : <span className="capitalize">{selectedCompany}</span>}
+                  <span className={`text-[10px] ml-1 transition-transform ${showCompanyDropdown ? "rotate-180" : ""}`}>▼</span>
                 </button>
-                {showCompanyDropdown &&
-                  !loadingCompanies &&
-                  availableCompanies.length > 1 && (
-                    <div className={`${dropdownStyle} md:absolute md:left-0`}>
-                      {" "}
-                      {availableCompanies.map((comp) => (
-                        <button
-                          key={comp}
-                          onClick={() => handleCompanySelect(comp)}
-                          className={`w-full text-left px-3 py-1.5 rounded text-xs capitalize transition-colors ${
-                            selectedCompany === comp
-                              ? "bg-orange-800/70 text-orange-300 font-semibold"
-                              : "text-gray-300 hover:bg-orange-800/40"
-                          }`}
-                        >
-                          {" "}
-                          {comp.replace(/-/g, " ")}{" "}
-                        </button>
-                      ))}{" "}
-                    </div>
-                  )}
+                {showCompanyDropdown && !loadingCompanies && availableCompanies.length > 1 && (
+                  <div className={`${dropdownStyle} md:absolute md:left-0`}>
+                    {availableCompanies.map((comp) => (
+                      <button
+                        key={comp}
+                        onClick={() => handleCompanySelect(comp)}
+                        className={`w-full text-left px-3 py-1.5 rounded-md text-sm capitalize transition-colors ${selectedCompany === comp ? "bg-zinc-800 text-white font-medium" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"}`}
+                      >
+                        {comp.replace(/-/g, " ")}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Selected Tags Display */}
             {selectedTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-3 border-t border-gray-800/70">
+              <div className="flex flex-wrap items-center gap-2 pt-2">
                 {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-950/60 text-orange-300 rounded-full text-[11px] border border-orange-700/60 shadow-sm"
-                  >
-                    {" "}
-                    {tag.replace(/-/g, " ")}{" "}
-                    <button
-                      onClick={() => handleTagSelect(tag)}
-                      className="text-orange-500 hover:text-red-400 font-bold -mr-1"
-                    >
-                      &times;
-                    </button>{" "}
+                  <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800 text-zinc-200 rounded-md text-xs border border-zinc-700">
+                    {tag.replace(/-/g, " ")}
+                    <button onClick={() => handleTagSelect(tag)} className="text-zinc-500 hover:text-red-400 ml-1">
+                      <FaTimes size={10} />
+                    </button>
                   </span>
                 ))}
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="text-gray-500 hover:text-red-500 text-xs ml-2 font-semibold"
-                >
-                  [Clear Tags]
+                <button onClick={() => setSelectedTags([])} className="text-zinc-500 hover:text-red-400 text-xs ml-2 font-medium underline underline-offset-2">
+                  Clear all
                 </button>
               </div>
             )}
           </div>
           
-          
           {/* Enhanced Table Container */}
           <div className={tableContainerStyle}>
             {loading && (
-              <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-10">
-                {" "}
-                <div className="w-12 h-12 border-4 border-t-transparent border-orange-500 rounded-full animate-spin"></div>{" "}
+              <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px] flex items-center justify-center z-10">
+                <div className="w-8 h-8 border-2 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
               </div>
             )}
             <div className="overflow-x-auto">
               <table className="w-full text-left min-w-[700px]">
-                <thead className="border-b-2 border-orange-700/50 bg-gradient-to-b from-black via-gray-950/70 to-black sticky top-0 z-0">
+                <thead className="bg-zinc-900/80 sticky top-0 z-0">
                   <tr>
-                    <th className={tableHeaderStyle + " w-[50%]"}>Title</th>
+                    <th className={tableHeaderStyle + " w-[45%]"}>Title</th>
                     <th className={tableHeaderStyle}>Difficulty</th>
                     <th className={tableHeaderStyle}>Tags</th>
                   </tr>
@@ -482,33 +348,18 @@ function ProblemListPage() {
                 <tbody>
                   {!loading && problems.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="3"
-                        className="p-10 text-center text-gray-500 text-xl italic font-semibold"
-                      >
+                      <td colSpan="3" className="p-12 text-center text-zinc-500 text-sm">
                         No problems match the current filters.
                       </td>
                     </tr>
                   ) : (
                     problems.map((prob) => (
-                      <tr
-                        key={prob._id}
-                        className={
-                          tableRowStyle + ` ${loading ? "opacity-30" : ""}`
-                        }
-                      >
+                      <tr key={prob._id} className={tableRowStyle + ` ${loading ? "opacity-50" : ""}`}>
                         <td className={tableCellStyle}>
-                          {/* 1. Add this wrapper div with flexbox */}
-                          <div className="flex items-center gap-1.5">
-                            {" "}
-                            {/* Adjust gap-X as needed */}
+                          <div className="flex items-center gap-2">
                             {prob.isPremium && (
-                              <span
-                                title="Premium Problem"
-                                className="text-yellow-400 text-xs shrink-0 [text-shadow:0_0_8px_rgba(255,215,0,0.7)] "
-                              >
-                                <IoIosLock className="w-5 h-5"/>{" "}
-                                
+                              <span title="Premium Problem" className="text-amber-500 shrink-0">
+                                <IoIosLock className="w-4 h-4" />
                               </span>
                             )}
                             <Link
@@ -518,24 +369,21 @@ function ProblemListPage() {
                             >
                               {prob.title}
                             </Link>
-                            {/* 2. Keep the conditional rendering inside the flex container */}
-                            
                           </div>
                         </td>
                         <td className={tableCellStyle}>
                           <DifficultyBadge difficulty={prob.difficulty} />
                         </td>
                         <td className={tableCellStyle}>
-                          <div className="flex flex-wrap gap-1 max-w-[250px]">
+                          <div className="flex flex-wrap gap-1.5 max-w-[300px]">
                             {prob.tags?.slice(0, 3).map((tag) => (
                               <span key={tag} className={tagSpanStyle}>
-                                {" "}
-                                {tag}{" "}
+                                {tag}
                               </span>
                             ))}
                             {(prob.tags?.length || 0) > 3 && (
-                              <span className="text-gray-500 text-xs font-semibold">
-                                ...
+                              <span className="text-zinc-500 text-xs font-medium self-center ml-1">
+                                +{(prob.tags.length - 3)}
                               </span>
                             )}
                           </div>

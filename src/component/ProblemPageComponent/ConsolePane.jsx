@@ -2,40 +2,39 @@ import React from "react";
 import {
   FaCheckCircle,
   FaTimesCircle,
-  FaHourglassHalf,
 } from "react-icons/fa";
 
-// --- Themed Tab Button ---
+// --- Themed Tab Button  ---
 const TabButton = ({ label, isActive, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-4 py-3 text-sm font-semibold transition-all duration-200
+    className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors duration-200
       ${
         isActive
-          ? "text-orange-400 border-b-2 border-orange-500 [text-shadow:0_0_10px_rgba(255,69,0,0.5)]"
-          : "text-gray-500 border-b-2 border-transparent hover:text-gray-300 hover:border-gray-700"
+          ? "text-red-400 border-red-500"
+          : "text-zinc-500 border-transparent hover:text-zinc-300 hover:border-zinc-700"
       }`}
   >
     {label}
   </button>
 );
 
-// --- Themed Test Case Box ---
+// --- Themed Test Case Box  ---
 const ThemedTestCase = ({ testCase, index }) => (
-  <div className="p-3 bg-gray-950/50 border border-orange-800/40 rounded-lg mb-2">
-    <p className="font-bold text-orange-400 mb-2 text-sm">
-      Case {index + 1}:
+  <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg mb-3">
+    <p className="font-semibold text-zinc-200 mb-3 text-sm">
+      Case {index + 1}
     </p>
-    <div className="text-gray-400 text-xs space-y-2">
+    <div className="text-zinc-400 text-xs space-y-3">
       <div>
-        <p className="font-semibold text-gray-500 mb-1">Input:</p>
-        <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-gray-200 font-mono text-[13px] leading-relaxed">
+        <p className="font-medium text-zinc-500 mb-1.5">Input</p>
+        <pre className="whitespace-pre-wrap bg-zinc-950 p-2.5 rounded-md border border-zinc-800/80 text-zinc-300 font-mono text-xs leading-relaxed custom-scrollbar">
           {testCase.input?.replace(/\\n/g, "\n")}
         </pre>
       </div>
       <div>
-        <p className="font-semibold text-gray-500 mb-1">Expected Output:</p>
-        <pre className="whitespace-pre-wrap bg-black/40 p-2 rounded-md border border-gray-800/50 text-gray-200 font-mono text-[13px] leading-relaxed">
+        <p className="font-medium text-zinc-500 mb-1.5">Expected Output</p>
+        <pre className="whitespace-pre-wrap bg-zinc-950 p-2.5 rounded-md border border-zinc-800/80 text-zinc-300 font-mono text-xs leading-relaxed custom-scrollbar">
           {testCase.expectedOutput?.replace(/\\n/g, "\n")}
         </pre>
       </div>
@@ -43,20 +42,20 @@ const ThemedTestCase = ({ testCase, index }) => (
   </div>
 );
 
-// --- Themed Result Status ---
+// --- Themed Result Status  ---
 const SubmissionStatus = ({ result }) => {
   if (!result) {
     return (
-      <p className="text-gray-600 italic">
-        (Run or Submit your code to see results...)
-      </p>
+      <div className="flex items-center justify-center h-full min-h-[100px] text-zinc-500 text-sm font-medium">
+        Run or Submit your code to see results...
+      </div>
     );
   }
 
   if (result.status === "Judging" || result.status === "Pending") {
     return (
-      <div className="flex items-center gap-2 text-yellow-400 font-bold text-lg">
-        <div className="w-5 h-5 border-2 border-t-transparent border-yellow-400 rounded-full animate-spin"></div>
+      <div className="flex items-center gap-3 text-amber-500 font-semibold text-lg mb-4">
+        <div className="w-5 h-5 border-2 border-zinc-800 border-t-amber-500 rounded-full animate-spin"></div>
         <span>{result.status}...</span>
       </div>
     );
@@ -64,16 +63,16 @@ const SubmissionStatus = ({ result }) => {
 
   if (result.status === "Accepted") {
     return (
-      <div className="text-green-400 font-bold text-xl [text-shadow:0_0_10px_rgba(0,255,0,0.5)]">
-        <FaCheckCircle className="inline mr-2" /> Accepted
+      <div className="flex items-center gap-2 text-emerald-500 font-bold text-2xl mb-4">
+        <FaCheckCircle /> <span>Accepted</span>
       </div>
     );
   }
 
-  // Any other status (Wrong Answer, TLE, etc.)
+  // Any other status (Wrong Answer, TLE, Runtime Error, etc.)
   return (
-    <div className="text-red-400 font-bold text-xl [text-shadow:0_0_10px_rgba(255,0,0,0.5)]">
-      <FaTimesCircle className="inline mr-2" /> {result.status}
+    <div className="flex items-center gap-2 text-red-500 font-bold text-2xl mb-4">
+      <FaTimesCircle /> <span>{result.status}</span>
     </div>
   );
 };
@@ -83,33 +82,32 @@ function ConsolePane({
   problemTestCases,
   submissionResult,
   isSubmitting,
-  // handleSubmit and handleRun are no longer needed here
   activeRightTab,
   setActiveRightTab,
 }) {
   return (
     // This component must fill its parent
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-zinc-950 font-sans">
       {/* --- Tab Header --- */}
-      <div className="flex-shrink-0 flex items-center border-b border-orange-900/40">
+      <div className="flex-shrink-0 flex items-center border-b border-zinc-800 bg-zinc-950 px-2 pt-1">
         <TabButton
-          label="Testcase"
+          label="Testcases"
           isActive={activeRightTab === "testcase"}
           onClick={() => setActiveRightTab("testcase")}
         />
         <TabButton
-          label="Result"
+          label="Test Result"
           isActive={activeRightTab === "result"}
           onClick={() => setActiveRightTab("result")}
         />
       </div>
 
       {/* --- Console/Output Area --- */}
-      <div className="flex-grow p-4 overflow-y-auto text-sm font-mono scrollbar-thin scrollbar-thumb-orange-800/50 scrollbar-track-black/50">
+      <div className="flex-grow p-4 overflow-y-auto custom-scrollbar">
         
         {/* --- Testcase Tab Content --- */}
         {activeRightTab === "testcase" && (
-          <div>
+          <div className="animate-in fade-in duration-200">
             {problemTestCases && problemTestCases.length > 0 ? (
               problemTestCases.map((tc, index) => (
                 <ThemedTestCase
@@ -119,7 +117,7 @@ function ConsolePane({
                 />
               ))
             ) : (
-              <p className="text-gray-600 italic">
+              <p className="text-zinc-500 italic text-sm">
                 No sample test cases provided.
               </p>
             )}
@@ -128,31 +126,40 @@ function ConsolePane({
 
         {/* --- Result Tab Content --- */}
         {activeRightTab === "result" && (
-          <div>
+          <div className="animate-in fade-in duration-200">
             <SubmissionStatus result={submissionResult} />
 
             {/* Display detailed results */}
             {submissionResult && submissionResult.results && (
-              <div className="mt-4 space-y-2">
+              <div className="space-y-2.5">
                 {submissionResult.results.map((res, index) => (
                   <div
                     key={index}
-                    className={`p-3 rounded-lg ${
+                    className={`p-3.5 rounded-md border ${
                       res.status === "Passed"
-                        ? "bg-green-900/30"
-                        : "bg-red-900/30"
+                        ? "bg-emerald-500/10 border-emerald-500/20"
+                        : "bg-red-500/10 border-red-500/20"
                     }`}
                   >
                     <span
-                      className={`font-semibold ${
+                      className={`font-semibold text-sm ${
                         res.status === "Passed"
-                          ? "text-green-400"
+                          ? "text-emerald-400"
                           : "text-red-400"
                       }`}
                     >
                       Test Case {index + 1}: {res.status}
                     </span>
-                    {/* You could add more details here later */}
+                    
+                    {/* Detailed error outputs can be conditionally rendered here later */}
+                    {res.status !== "Passed" && res.output && (
+                      <div className="mt-2 pt-2 border-t border-red-500/20">
+                         <p className="text-xs text-red-400/80 mb-1 font-medium">Output / Error:</p>
+                         <pre className="text-[11px] text-red-300 font-mono whitespace-pre-wrap overflow-x-auto custom-scrollbar">
+                           {res.output}
+                         </pre>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -160,9 +167,6 @@ function ConsolePane({
           </div>
         )}
       </div>
-
-      {/* --- Bottom Action Bar (REMOVED) --- */}
-      {/* The Run and Submit buttons are now in the header */}
     </div>
   );
 }

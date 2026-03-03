@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
 import SignUp from './pages/authenticationPages/SignUp';
 import Login from './pages/authenticationPages/Login';
@@ -66,7 +67,35 @@ const { userData, loading } = useSelector(state => state.user);
       {/* Conditionally render the Nav */}
       {showNav && <Nav />}
 
-      <ToastContainer />
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Default options for all toasts
+          className: '',
+          style: {
+            background: '#18181b', // zinc-900
+            color: '#e4e4e7',      // zinc-200
+            border: '1px solid #27272a', // zinc-800
+            fontSize: '14px',
+            fontWeight: '500',
+            padding: '12px 16px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981', // emerald-500
+              secondary: '#18181b',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444', // red-500
+              secondary: '#18181b',
+            },
+          },
+        }}
+      />
+      <ToastContainer/>
       <ScrollToTop />
       <Routes>
         <Route path='/' element={<Home />} />

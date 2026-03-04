@@ -13,7 +13,8 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-black/90 border border-green-500/50 p-3 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+      // Updated shadow color to green rgba(34,197,94,0.3)
+      <div className="bg-black/90 border border-green-500/50 p-3 rounded shadow-[0_0_15px_rgba(34,197,94,0.3)]">
         <p className="text-gray-400 text-xs mb-1">{label}</p>
         <p className="text-green-400 font-bold text-sm">
           Submissions: {payload[0].value}
@@ -40,10 +41,11 @@ const ActivityGraph = ({ data }) => {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData}>
           <defs>
-            {/* Gradient Fill Definition */}
+            {/* Gradient Fill Definition - Updated to Green hex codes */}
             <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ea580c" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#ea580c" stopOpacity={0} />
+              {/* Using Tailwind green-500 hex: #22c55e */}
+              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
             </linearGradient>
           </defs>
           
@@ -70,10 +72,10 @@ const ActivityGraph = ({ data }) => {
           <Area
             type="monotone"
             dataKey="count"
-            stroke="#ea580c" // Orange line
+            stroke="#22c55e" // Green line (Tailwind green-500)
             strokeWidth={3}
             fillOpacity={1}
-            fill="url(#colorActivity)" // Link to gradient
+            fill="url(#colorActivity)" // Link to the green gradient above
             animationDuration={1500}
           />
         </AreaChart>

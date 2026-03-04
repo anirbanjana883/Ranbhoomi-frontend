@@ -13,9 +13,10 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-black/90 border border-orange-500/50 p-3 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+      // Updated to blue-500 glow and border
+      <div className="bg-black/90 border border-blue-500/50 p-3 rounded shadow-[0_0_15px_rgba(59,130,246,0.3)]">
         <p className="text-gray-300 text-xs mb-1 font-bold">{label}</p>
-        <p className="text-orange-400 font-bold text-sm">
+        <p className="text-blue-400 font-bold text-sm">
           Rank: #{data.rank}
         </p>
         <p className="text-gray-500 text-xs">
@@ -82,9 +83,9 @@ const ContestRatingGraph = ({ data }) => {
           <Line 
             type="monotone" 
             dataKey="rank" 
-            stroke="#ea580c" 
+            stroke="#3b82f6" // Tailwind blue-500
             strokeWidth={3} 
-            dot={{ r: 4, fill: "#ea580c", strokeWidth: 0 }}
+            dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
             activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
             animationDuration={1500}
           />

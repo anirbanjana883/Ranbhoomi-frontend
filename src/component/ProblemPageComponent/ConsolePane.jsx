@@ -43,7 +43,17 @@ const ThemedTestCase = ({ testCase, index }) => (
 );
 
 // --- Themed Result Status  ---
-const SubmissionStatus = ({ result }) => {
+const SubmissionStatus = ({ result, isSubmitting }) => {
+  if (isSubmitting || result?.status === "Judging" || result?.status === "Pending") {
+    return (
+      <div className="flex items-center gap-3 text-amber-500 font-semibold text-lg mb-4 mt-2">
+        <div className="w-5 h-5 border-2 border-zinc-800 border-t-amber-500 rounded-full animate-spin"></div>
+        <span>Evaluating Code...</span>
+      </div>
+    );
+  }
+
+  // If not submitting and no result exists
   if (!result) {
     return (
       <div className="flex items-center justify-center h-full min-h-[100px] text-zinc-500 text-sm font-medium">
@@ -52,18 +62,10 @@ const SubmissionStatus = ({ result }) => {
     );
   }
 
-  if (result.status === "Judging" || result.status === "Pending") {
-    return (
-      <div className="flex items-center gap-3 text-amber-500 font-semibold text-lg mb-4">
-        <div className="w-5 h-5 border-2 border-zinc-800 border-t-amber-500 rounded-full animate-spin"></div>
-        <span>{result.status}...</span>
-      </div>
-    );
-  }
-
+  // Accepted Status
   if (result.status === "Accepted") {
     return (
-      <div className="flex items-center gap-2 text-emerald-500 font-bold text-2xl mb-4">
+      <div className="flex items-center gap-2 text-emerald-500 font-bold text-2xl mb-4 mt-2">
         <FaCheckCircle /> <span>Accepted</span>
       </div>
     );
@@ -71,7 +73,7 @@ const SubmissionStatus = ({ result }) => {
 
   // Any other status (Wrong Answer, TLE, Runtime Error, etc.)
   return (
-    <div className="flex items-center gap-2 text-red-500 font-bold text-2xl mb-4">
+    <div className="flex items-center gap-2 text-red-500 font-bold text-2xl mb-4 mt-2">
       <FaTimesCircle /> <span>{result.status}</span>
     </div>
   );
@@ -86,7 +88,6 @@ function ConsolePane({
   setActiveRightTab,
 }) {
   return (
-    // This component must fill its parent
     <div className="flex flex-col h-full bg-zinc-950 font-sans">
       {/* --- Tab Header --- */}
       <div className="flex-shrink-0 flex items-center border-b border-zinc-800 bg-zinc-950 px-2 pt-1">
@@ -127,15 +128,15 @@ function ConsolePane({
         {/* --- Result Tab Content --- */}
         {activeRightTab === "result" && (
           <div className="animate-in fade-in duration-200">
-            <SubmissionStatus result={submissionResult} />
+            <SubmissionStatus result={submissionResult} isSubmitting={isSubmitting} />
 
-            {/* Display detailed results */}
-            {submissionResult && submissionResult.results && (
-              <div className="space-y-2.5">
+            {/* Display detailed results only if not currently submitting */}
+            {!isSubmitting && submissionResult && submissionResult.results && (
+              <div className="space-y-3">
                 {submissionResult.results.map((res, index) => (
                   <div
                     key={index}
-                    className={`p-3.5 rounded-md border ${
+                    className={`p-4 rounded-md border ${
                       res.status === "Passed"
                         ? "bg-emerald-500/10 border-emerald-500/20"
                         : "bg-red-500/10 border-red-500/20"
@@ -151,13 +152,37 @@ function ConsolePane({
                       Test Case {index + 1}: {res.status}
                     </span>
                     
-                    {/* Detailed error outputs can be conditionally rendered here later */}
-                    {res.status !== "Passed" && res.output && (
-                      <div className="mt-2 pt-2 border-t border-red-500/20">
-                         <p className="text-xs text-red-400/80 mb-1 font-medium">Output / Error:</p>
-                         <pre className="text-[11px] text-red-300 font-mono whitespace-pre-wrap overflow-x-auto custom-scrollbar">
-                           {res.output}
-                         </pre>
+                    {res.status !== "Passed" && (
+                      <div className="mt-3 pt-3 border-t border-red-500/20 space-y-3">
+                        {/* Input */}
+                        {res.input && (
+                          <div>
+                            <p className="text-xs text-zinc-500 mb-1 font-medium">Input:</p>
+                            <pre className="text-xs text-zinc-300 font-mono bg-zinc-950 p-2 rounded-md border border-zinc-800 whitespace-pre-wrap">
+                              {res.input}
+                            </pre>
+                          </div>
+                        )}
+                        
+                        {/* Expected Output */}
+                        {res.expectedOutput && (
+                          <div>
+                            <p className="text-xs text-zinc-500 mb-1 font-medium">Expected Output:</p>
+                            <pre className="text-xs text-emerald-400/80 font-mono bg-zinc-950 p-2 rounded-md border border-zinc-800 whitespace-pre-wrap">
+                              {res.expectedOutput}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Actual Output / Error */}
+                        {(res.output || res.actualOutput) && (
+                          <div>
+                            <p className="text-xs text-red-400/80 mb-1 font-medium">Actual Output / Error:</p>
+                            <pre className="text-[11px] text-red-300 font-mono bg-red-950/30 p-2 rounded-md border border-red-900/30 whitespace-pre-wrap overflow-x-auto custom-scrollbar">
+                              {res.actualOutput || res.output}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

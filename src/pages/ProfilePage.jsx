@@ -12,7 +12,7 @@ import {
   FaTerminal,
   FaMedal,
   FaCrown,
-  FaShareSquare ,
+  FaShareSquare,
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
@@ -36,10 +36,10 @@ const LoadingSpinner = () => (
 const heatmapCSS = `
   .react-calendar-heatmap text { font-size: 10px; fill: #71717a; font-family: monospace; }
   .react-calendar-heatmap .color-empty { fill: #27272a; rx: 3px; ry: 3px; }
-  .react-calendar-heatmap .color-scale-1 { fill: #064e3b; rx: 3px; ry: 3px; } /* emerald-900 */
-  .react-calendar-heatmap .color-scale-2 { fill: #047857; rx: 3px; ry: 3px; } /* emerald-700 */
-  .react-calendar-heatmap .color-scale-3 { fill: #10b981; rx: 3px; ry: 3px; } /* emerald-500 */
-  .react-calendar-heatmap .color-scale-4 { fill: #34d399; rx: 3px; ry: 3px; } /* emerald-400 */
+  .react-calendar-heatmap .color-scale-1 { fill: #7f1d1d; rx: 3px; ry: 3px; } /* red-900 */
+  .react-calendar-heatmap .color-scale-2 { fill: #b91c1c; rx: 3px; ry: 3px; } /* red-700 */
+  .react-calendar-heatmap .color-scale-3 { fill: #ef4444; rx: 3px; ry: 3px; } /* red-500 */
+  .react-calendar-heatmap .color-scale-4 { fill: #f87171; rx: 3px; ry: 3px; } /* red-400 */
   .react-calendar-heatmap rect:hover { stroke: #e4e4e7; stroke-width: 1px; }
 `;
 
@@ -96,6 +96,7 @@ function ProfilePage() {
       setIsRequesting(false);
     }
   };
+  
   const handleShareProfile = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
@@ -125,6 +126,16 @@ function ProfilePage() {
   const graphData = stats.heatmap
     ? [...stats.heatmap].sort((a, b) => new Date(a.date) - new Date(b.date))
     : [];
+
+  // --- Circular SVG Progress Math (LeetCode Style) ---
+  const totalSolved = stats.totalSolved || 0;
+  const calcTotal = totalSolved === 0 ? 1 : totalSolved; // Prevent division by zero
+  const radius = 42;
+  const circ = 2 * Math.PI * radius;
+  const easyLen = ((stats.easy || 0) / calcTotal) * circ;
+  const medLen = ((stats.medium || 0) / calcTotal) * circ;
+  const hardLen = ((stats.hard || 0) / calcTotal) * circ;
+  const superLen = ((stats.superHard || 0) / calcTotal) * circ;
 
   // --- TUF Styles ---
   const cardStyle = `bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-sm h-full flex flex-col`;
@@ -160,7 +171,7 @@ function ProfilePage() {
           {/* ========================================== */}
           {/* LEFT COLUMN: Identity, Difficulty & Config */}
           {/* ========================================== */}
-<div className="lg:col-span-1 space-y-6 flex flex-col">
+          <div className="lg:col-span-1 space-y-6 flex flex-col">
             
             {/* 1. Profile Card */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-sm text-center shrink-0">
@@ -252,56 +263,92 @@ function ProfilePage() {
               </div>
             )}
 
-            {/* 3. Difficulty Breakdown  */}
+            {/* 3. Solved Problems (LeetCode Style) */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-sm shrink-0">
               <h2 className={headingStyle}>
-                <FaTrophy className="text-zinc-500" /> Battle Record
+                <FaCode className="text-zinc-500" /> Solved Problems
               </h2>
-              <div className="space-y-5">
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold uppercase tracking-wider">
-                    <span className="text-emerald-400">Easy</span>
-                    <span className="text-zinc-500">{stats.easy} solved</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.easy / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold uppercase tracking-wider">
-                    <span className="text-amber-400">Medium</span>
-                    <span className="text-zinc-500">{stats.medium} solved</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.medium / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold uppercase tracking-wider">
-                    <span className="text-red-500">Hard</span>
-                    <span className="text-zinc-500">{stats.hard} solved</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.hard / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold uppercase tracking-wider">
-                    <span className="text-purple-400">Super Hard</span>
-                    <span className="text-zinc-500">{stats.superHard} solved</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${Math.min((stats.superHard / (stats.totalSolved || 1)) * 100, 100)}%` }}></div>
+              
+              <div className="flex items-center gap-5 mt-4">
+                {/* Left: Circular Progress Ring */}
+                <div className="relative w-28 h-28 shrink-0">
+                  <svg className="w-full h-full transform -rotate-90 drop-shadow-md" viewBox="0 0 100 100">
+                    {/* Background Track */}
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" strokeWidth="5" />
+                    
+                    {/* Dynamic Segments */}
+                    {stats.easy > 0 && (
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" strokeWidth="5"
+                        strokeDasharray={`${easyLen} ${circ}`} strokeDashoffset={0} strokeLinecap="round" />
+                    )}
+                    {stats.medium > 0 && (
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="#f59e0b" strokeWidth="5"
+                        strokeDasharray={`${medLen} ${circ}`} strokeDashoffset={-easyLen} strokeLinecap="round" />
+                    )}
+                    {stats.hard > 0 && (
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="#ef4444" strokeWidth="5"
+                        strokeDasharray={`${hardLen} ${circ}`} strokeDashoffset={-(easyLen + medLen)} strokeLinecap="round" />
+                    )}
+                    {stats.superHard > 0 && (
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="#a855f7" strokeWidth="5"
+                        strokeDasharray={`${superLen} ${circ}`} strokeDashoffset={-(easyLen + medLen + hardLen)} strokeLinecap="round" />
+                    )}
+                  </svg>
+                  
+                  {/* Center Text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-zinc-100">{totalSolved}</span>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mt-0.5">Solved</span>
                   </div>
                 </div>
 
-                <div className="pt-5 border-t border-zinc-800 flex justify-between items-center mt-2">
-                  <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Total Solved</span>
-                  <span className="text-2xl font-black text-zinc-100">{stats.totalSolved}</span>
+                {/* Right: Linear Stats Breakdown */}
+                <div className="flex-1 space-y-3">
+                  {/* Easy */}
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5 text-xs">
+                      <span className="text-emerald-400 font-medium">Easy</span>
+                      <span className="text-zinc-300 font-bold">{stats.easy || 0}</span>
+                    </div>
+                    <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(((stats.easy || 0) / calcTotal) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
+                  
+                  {/* Medium */}
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5 text-xs">
+                      <span className="text-amber-400 font-medium">Medium</span>
+                      <span className="text-zinc-300 font-bold">{stats.medium || 0}</span>
+                    </div>
+                    <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${Math.min(((stats.medium || 0) / calcTotal) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
+                  
+                  {/* Hard */}
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5 text-xs">
+                      <span className="text-red-500 font-medium">Hard</span>
+                      <span className="text-zinc-300 font-bold">{stats.hard || 0}</span>
+                    </div>
+                    <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${Math.min(((stats.hard || 0) / calcTotal) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
+
+                  {/* Super Hard */}
+                  <div>
+                    <div className="flex justify-between items-end mb-1.5 text-xs">
+                      <span className="text-purple-400 font-medium">Super Hard</span>
+                      <span className="text-zinc-300 font-bold">{stats.superHard || 0}</span>
+                    </div>
+                    <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${Math.min(((stats.superHard || 0) / calcTotal) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </div>
 

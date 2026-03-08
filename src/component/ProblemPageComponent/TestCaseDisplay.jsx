@@ -1,29 +1,32 @@
 import React from 'react';
 
-const TestCaseDisplay = ({ testCase, index }) => (
-  <div className="mb-4 bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 rounded-lg border border-orange-800/40 shadow-sm hover:border-orange-600/60 transition-colors">
-    <p className="font-bold text-orange-400 mb-2 text-sm">Example {index + 1}:</p>
+export default function TestCaseDisplay({ testCase, index }) {
+  return (
+    <div className="mb-5 bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-sm hover:border-zinc-700 transition-colors">
+      <p className="font-bold text-zinc-100 mb-4 text-sm tracking-tight">
+        Example {index + 1}
+      </p>
 
-    <div className="space-y-3 text-xs font-mono">
-      <div>
-        <strong className="text-gray-500 font-sans text-[11px] uppercase tracking-wider">
-          Input:
-        </strong>
-        <pre className="mt-1 whitespace-pre-wrap bg-black/40 px-3 py-2 rounded text-gray-300 border border-gray-800">
-          {testCase.input?.replace(/\\n/g, "\n")}
-        </pre>
-      </div>
+      <div className="space-y-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-1.5">
+            Input
+          </p>
+          <pre className="whitespace-pre-wrap bg-zinc-950 px-4 py-3 rounded-md border border-zinc-800 text-zinc-300 font-mono text-xs leading-relaxed custom-scrollbar">
+            {testCase.input?.replace(/\\n/g, "\n")}
+          </pre>
+        </div>
 
-      <div>
-        <strong className="text-gray-500 font-sans text-[11px] uppercase tracking-wider">
-          Output:
-        </strong>
-        <pre className="mt-1 whitespace-pre-wrap bg-black/40 px-3 py-2 rounded text-gray-300 border border-gray-800">
-          {testCase.expectedOutput?.replace(/\\n/g, "\n")}
-        </pre>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-1.5">
+            Output
+          </p>
+          {/* Using emerald tint for output to signify the "expected/correct" result */}
+          <pre className="whitespace-pre-wrap bg-zinc-950 px-4 py-3 rounded-md border border-zinc-800 text-emerald-400/90 font-mono text-xs leading-relaxed custom-scrollbar">
+            {testCase.expectedOutput?.replace(/\\n/g, "\n")}
+          </pre>
+        </div>
       </div>
     </div>
-  </div>
-);
-
-export default TestCaseDisplay;
+  );
+}

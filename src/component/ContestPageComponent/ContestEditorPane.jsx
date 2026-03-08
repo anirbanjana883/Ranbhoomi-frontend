@@ -1,40 +1,28 @@
 import React, { useMemo, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-
-// Languages
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import { java } from '@codemirror/lang-java';
 import { cpp } from '@codemirror/lang-cpp';
-
-// Themes
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { dracula } from '@uiw/codemirror-theme-dracula';
 import { githubDark } from '@uiw/codemirror-theme-github';
+import { FaSyncAlt, FaCog, FaTimes } from 'react-icons/fa';
 
-// Icons
-import { FaSyncAlt, FaCog } from 'react-icons/fa';
-
-function ContestEditorPane({
+export default function ContestEditorPane({
   problem,
   selectedLanguage,
   code,
-  handleLanguageChange, // Expects (e) => ...
-  handleEditorChange,   // Expects (val) => ...
+  handleLanguageChange, 
+  handleEditorChange,   
   resetCode
 }) {
-  // --- Customization State ---
   const [fontSize, setFontSize] = useState(14);
   const [themeName, setThemeName] = useState("vscode");
   const [showSettings, setShowSettings] = useState(false);
 
-  // --- Styles (Your Magma Theme) ---
-  const paneHeaderStyle = `flex-none p-3 px-4 text-sm font-semibold text-gray-400 border-b border-orange-900/30 bg-[#050505] flex justify-between items-center z-20`;
-  const iconButtonStyle = `p-2 rounded-lg bg-gray-900 border border-gray-700/50 text-orange-500 transition-all duration-200 ease-in-out transform focus:outline-none hover:text-orange-400 hover:border-orange-600/60 hover:bg-orange-900/20 hover:shadow-[0_0_15px_rgba(255,100,0,0.2)]`;
-
-  // --- Helper: Get Extensions ---
   const extensions = useMemo(() => {
-    switch (selectedLanguage.toLowerCase()) {
+    switch (selectedLanguage?.toLowerCase()) {
       case 'javascript': return [javascript({ jsx: true })];
       case 'python': return [python()];
       case 'java': return [java()];
@@ -44,7 +32,6 @@ function ContestEditorPane({
     }
   }, [selectedLanguage]);
 
-  // --- Helper: Get Theme Object ---
   const getTheme = () => {
     switch (themeName) {
       case 'dracula': return dracula;
@@ -54,38 +41,31 @@ function ContestEditorPane({
     }
   };
 
-  // Safe check for starter code to prevent crashes
   const availableLanguages = problem?.starterCode || [
-    { language: "javascript" }, 
-    { language: "python" }, 
-    { language: "java" }, 
-    { language: "cpp" }
+    { language: "javascript" }, { language: "python" }, { language: "java" }, { language: "cpp" }
   ];
 
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e]">
       
-      {/* --- HEADER SECTION --- */}
-      <div className={paneHeaderStyle}>
+      {/* HEADER SECTION */}
+      <div className="flex-none p-2 px-4 border-b border-zinc-800 bg-zinc-950 flex justify-between items-center z-20 shadow-sm">
         
-        {/* Language Selector */}
-        <div className="flex gap-2">
-          <select
-            value={selectedLanguage}
-            onChange={handleLanguageChange}
-            className="bg-[#1e1e1e] border border-gray-700 text-gray-300 text-xs rounded px-3 py-1.5 focus:outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600/50 appearance-none cursor-pointer hover:bg-[#252526]"
-          >
-            {availableLanguages.map((sc) => (
-              <option key={sc.language} value={sc.language}>
-                {sc.language.charAt(0).toUpperCase() + sc.language.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={selectedLanguage}
+          onChange={handleLanguageChange}
+          className="bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-semibold rounded-md pl-3 pr-8 py-1.5 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 appearance-none cursor-pointer hover:border-zinc-700 transition-colors"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2371717a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right .5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.2em 1.2em` }}
+        >
+          {availableLanguages.map((sc) => (
+            <option key={sc.language} value={sc.language}>
+              {sc.language === 'cpp' ? 'C++' : sc.language.charAt(0).toUpperCase() + sc.language.slice(1)}
+            </option>
+          ))}
+        </select>
 
-        {/* Tools & Settings */}
         <div className="flex items-center gap-2">
-          <button onClick={resetCode} title="Reset Code" className={iconButtonStyle}>
+          <button onClick={resetCode} title="Reset to Starter Code" className="p-2 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors focus:outline-none">
             <FaSyncAlt size={12} />
           </button>
           
@@ -93,31 +73,30 @@ function ContestEditorPane({
             <button 
                 onClick={() => setShowSettings(!showSettings)} 
                 title="Editor Settings" 
-                className={`${iconButtonStyle} ${showSettings ? 'bg-orange-900/30 border-orange-500/50' : ''}`}
+                className={`p-2 rounded-md transition-colors focus:outline-none ${showSettings ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'}`}
             >
-                <FaCog size={12} />
+                <FaCog size={14} />
             </button>
 
-            {/* --- DROPDOWN MENU --- */}
+            {/* DROPDOWN MENU */}
             {showSettings && (
-            <div className="absolute top-10 right-0 z-50 w-64 bg-[#181818] border border-orange-900/40 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.9)] p-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-800">
-                    <h3 className="text-orange-500 text-xs font-bold uppercase tracking-widest">Settings</h3>
-                    <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-white text-xs">✕</button>
+            <div className="absolute top-10 right-0 z-50 w-64 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl p-5 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-zinc-800/80">
+                    <h3 className="text-zinc-100 text-[10px] font-bold uppercase tracking-widest">Settings</h3>
+                    <button onClick={() => setShowSettings(false)} className="text-zinc-500 hover:text-red-400"><FaTimes size={10}/></button>
                 </div>
                 
-                {/* Theme Select */}
                 <div className="mb-5">
-                    <label className="text-gray-400 text-[10px] uppercase font-bold block mb-2">Theme</label>
-                    <div className="grid grid-cols-1 gap-1">
+                    <label className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold block mb-2">Theme</label>
+                    <div className="grid grid-cols-1 gap-2">
                         {['vscode', 'dracula', 'github'].map((t) => (
                             <button
                                 key={t}
                                 onClick={() => setThemeName(t)}
-                                className={`text-left px-3 py-2 text-xs rounded border transition-all ${
+                                className={`text-left px-3 py-2 text-xs rounded-md border transition-all ${
                                     themeName === t 
-                                    ? 'bg-orange-600/10 border-orange-600/50 text-orange-400 font-bold' 
-                                    : 'bg-[#222] border-transparent text-gray-400 hover:bg-[#2a2a2a] hover:text-gray-200'
+                                    ? 'bg-red-500/10 border-red-500/30 text-red-400 font-semibold' 
+                                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                                 }`}
                             >
                                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -126,16 +105,15 @@ function ContestEditorPane({
                     </div>
                 </div>
 
-                {/* Font Size Slider */}
                 <div>
                     <div className="flex justify-between text-xs mb-2">
-                        <label className="text-gray-400 font-bold text-[10px] uppercase">Font Size</label>
-                        <span className="text-orange-400 font-mono">{fontSize}px</span>
+                        <label className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold">Font Size</label>
+                        <span className="text-red-400 font-mono font-bold">{fontSize}px</span>
                     </div>
                     <input 
                         type="range" min="12" max="24" step="1" value={fontSize} 
                         onChange={(e) => setFontSize(parseInt(e.target.value))}
-                        className="w-full accent-orange-600 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        className="w-full accent-red-600 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
                     />
                 </div>
             </div>
@@ -144,11 +122,8 @@ function ContestEditorPane({
         </div>
       </div>
 
-      {/* --- EDITOR AREA --- */}
-      <div 
-        className="flex-1 min-h-0 relative overflow-hidden bg-[#1e1e1e]"
-        style={{ fontSize: `${fontSize}px` }}
-      >
+      {/* EDITOR AREA */}
+      <div className="flex-1 min-h-0 relative overflow-hidden bg-[#1e1e1e]" style={{ fontSize: `${fontSize}px` }}>
         <div className="absolute inset-0">
             <CodeMirror
               value={code}
@@ -157,28 +132,13 @@ function ContestEditorPane({
               theme={getTheme()} 
               extensions={extensions}
               onChange={(value) => handleEditorChange(value)}
-              className="h-full"
+              className="h-full custom-scrollbar"
               basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: true,
-                  foldGutter: true,
-                  dropCursor: true,
-                  allowMultipleSelections: true,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: true,
-                  rectangularSelection: true,
-                  crosshairCursor: true,
-                  highlightActiveLine: true,
-                  highlightSelectionMatches: true,
-                  closeBracketsKeymap: true,
-                  defaultKeymap: true,
-                  searchKeymap: true,
-                  historyKeymap: true,
-                  foldKeymap: true,
-                  completionKeymap: true,
-                  lintKeymap: true,
+                  lineNumbers: true, highlightActiveLineGutter: true, foldGutter: true, dropCursor: true,
+                  allowMultipleSelections: true, indentOnInput: true, bracketMatching: true, closeBrackets: true,
+                  autocompletion: true, rectangularSelection: true, crosshairCursor: true, highlightActiveLine: true,
+                  highlightSelectionMatches: true, closeBracketsKeymap: true, defaultKeymap: true, searchKeymap: true,
+                  historyKeymap: true, foldKeymap: true, completionKeymap: true, lintKeymap: true,
               }}
             />
         </div>
@@ -186,5 +146,3 @@ function ContestEditorPane({
     </div>
   );
 }
-
-export default ContestEditorPane;

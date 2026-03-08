@@ -318,7 +318,7 @@ function CreateProblemPage() {
         <span className="hidden sm:inline">Back to Manage</span>
       </button>
 
-      <div className="min-h-screen bg-zinc-950 text-zinc-300 pt-28 px-4 sm:px-6 lg:px-8 pb-20 font-sans">
+      <div className="min-h-screen bg-zinc-950 text-zinc-300 pt-34 px-4 sm:px-6 lg:px-8 pb-20 font-sans">
         
         {/* 🔥 MASSIVE WIDE CONTAINER FOR SPLIT SCREEN */}
         <div className="max-w-[1600px] w-full mx-auto">

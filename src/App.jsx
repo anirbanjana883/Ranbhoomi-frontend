@@ -1,23 +1,29 @@
 import React from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { ToastContainer } from 'react-toastify';
+import { useSelector } from 'react-redux';
+
+// Custom Hooks & Utils
+import useGetCurrentUser from "./customHooks/useGetCurrentUser";
+import ScrollToTop from './component/ScrollToTop';
+
+// Components
+import Nav from './component/Nav';
+import MasterRoute from './component/adminComponents/MasterRoute';
+import AdminRoute from './component/adminComponents/AdminRoute';
+import PricingSection from './component/PricingSection';
+
+// Pages
 import Home from './pages/Home';
 import SignUp from './pages/authenticationPages/SignUp';
 import Login from './pages/authenticationPages/Login';
-import { ToastContainer } from 'react-toastify';
-import useGetCurrentUser from "./customHooks/useGetCurrentUser";
-import { useSelector } from 'react-redux';
-import ScrollToTop from './component/ScrollToTop';
 import ForgetPassowrd from './pages/authenticationPages/ForgetPassword';
 import ProfilePage from './pages/ProfilePage';
 import EditProfile from './pages/EditProfile';
-import MasterRoute from './component/adminComponents/MasterRoute';
-import AdminRoute from './component/adminComponents/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
-import Nav from './component/Nav';
 import ProblemPage from './pages/problemPages/ProblemPage';
 import ProblemListPage from './pages/problemPages/ProblemListPage';
-
 import CreateProblemPage from './pages/Admin/CreateProblemPage';
 import EditProblemPage from './pages/Admin/EditProblemPage';
 import ProblemManagementPage from './pages/Admin/ProblemManagementPage';
@@ -32,7 +38,6 @@ import InterviewLobby from './pages/interviewPages/InterviewLobby';
 import InterviewRoom from './pages/interviewPages/InterviewRoom';
 import RoadmapListPage from './pages/roadmapPages/RoadmapListPage';
 import RoadmapDetailsPage from './pages/roadmapPages/RoadmapDetailsPage';
-import PricingSection from './component/PricingSection';
 import CreatePrivateContest from './pages/premiumUser/CreatePrivateContest';
 import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
 import Community from './pages/Community/Community';
@@ -41,45 +46,41 @@ export const serverUrl = "http://localhost:5000";
 
 function App() {
   useGetCurrentUser();
-
-const { userData, loading } = useSelector(state => state.user);
-  
+  const { userData, loading } = useSelector(state => state.user);
   const location = useLocation();
 
-  const hideNavPaths = ['/login', '/signup', '/forget' ,];
-
-  const showNav = !hideNavPaths.includes(location.pathname) && 
-                !location.pathname.startsWith('/problem/') && 
-                !location.pathname.startsWith('/interview/room/') &&
-                !location.pathname.startsWith('/contest/') ;
+  // Strict UI Requirement: Nav is ONLY visible on the Home page ('/')
+  const isHomePage = location.pathname === '/';
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <h2>Loading Ranbhoomi...</h2>
+      <div className="flex flex-col items-center justify-center h-screen bg-zinc-950">
+        <div className="w-12 h-12 border-4 border-zinc-800 border-t-red-600 rounded-full animate-spin mb-4" />
+        <h2 className="text-zinc-400 font-mono text-sm tracking-widest uppercase animate-pulse">
+          Initializing Ranbhoomi...
+        </h2>
       </div>
     );
   }
 
-
   return (
-    <>
-      {/* Conditionally render the Nav */}
-      {showNav && <Nav />}
+    <div className="min-h-screen bg-zinc-950 text-zinc-300 selection:bg-red-500/30 selection:text-red-200">
+      {/* Conditionally render Nav only on Home */}
+      {isHomePage && <Nav />}
 
       <Toaster 
         position="top-center"
         reverseOrder={false}
         toastOptions={{
-          // Default options for all toasts
-          className: '',
           style: {
             background: '#18181b', // zinc-900
-            color: '#e4e4e7',      // zinc-200
+            color: '#f4f4f5',      // zinc-100
             border: '1px solid #27272a', // zinc-800
-            fontSize: '14px',
-            fontWeight: '500',
-            padding: '12px 16px',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            padding: '12px 24px',
+            boxShadow: 'none',
           },
           success: {
             iconTheme: {
@@ -95,64 +96,62 @@ const { userData, loading } = useSelector(state => state.user);
           },
         }}
       />
-      <ToastContainer/>
+      
+      <ToastContainer theme="dark" toastStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a" }} />
       <ScrollToTop />
-      <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/signup' element={!userData ? <SignUp/> : <Navigate to={"/"}/>}/>
-        <Route path='/login' element={!userData ? <Login /> : <Navigate to={"/"} />} />
-        <Route path='/forget' element={!userData ? <ForgetPassowrd/> : <Navigate to="/"/>}/>
-        <Route path='/profile/:username' element={userData ? <ProfilePage /> : <Navigate to="/login" />} />
-        <Route path='/editprofile' element={userData ? <EditProfile /> : <Navigate to="/login" />} />
 
-        {/* practice problem */}
-        <Route path='/practice' element={userData ? <ProblemListPage /> : <Navigate to="/login" />} /> 
-        <Route path='/problem/:slug' element={userData ? <ProblemPage /> : <Navigate to="/login" />} />
+      <main className="relative">
+        <Routes>
+          <Route path='/' element={<Home />} />
+          <Route path='/signup' element={!userData ? <SignUp/> : <Navigate to={"/"}/>}/>
+          <Route path='/login' element={!userData ? <Login /> : <Navigate to={"/"} />} />
+          <Route path='/forget' element={!userData ? <ForgetPassowrd/> : <Navigate to="/"/>}/>
+          
+          {/* Protected Profile Routes */}
+          <Route path='/profile/:username' element={userData ? <ProfilePage /> : <Navigate to="/login" />} />
+          <Route path='/editprofile' element={userData ? <EditProfile /> : <Navigate to="/login" />} />
 
+          {/* Practice & Problem Routes */}
+          <Route path='/practice' element={userData ? <ProblemListPage /> : <Navigate to="/login" />} /> 
+          <Route path='/problem/:slug' element={userData ? <ProblemPage /> : <Navigate to="/login" />} />
 
-        {/* role based auth control system */}
-        <Route element={<MasterRoute />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        </Route>
+          {/* Master Admin Routes */}
+          <Route element={<MasterRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          </Route>
 
-        {/* --- Admin & Master Routes --- */}
-        <Route element={<AdminRoute />}>
-          <Route path="/admin/problems" element={<ProblemManagementPage />} />
-          <Route path="/admin/problems/create" element={<CreateProblemPage />} /> 
-          <Route path="/admin/problems/edit/:slug" element={<EditProblemPage />} /> 
+          {/* Standard Admin Routes */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/problems" element={<ProblemManagementPage />} />
+            <Route path="/admin/problems/create" element={<CreateProblemPage />} /> 
+            <Route path="/admin/problems/edit/:slug" element={<EditProblemPage />} /> 
+            <Route path="/admin/contests" element={<AdminContestPage />} />
+            <Route path="/admin/contests/create" element={<CreateContestPage />} />
+            <Route path="/admin/contests/edit/:slug" element={<EditContestPage />} />
+          </Route> 
 
-          {/* --- MOVE THESE ROUTES INSIDE --- */}
-          <Route path="/admin/contests" element={<AdminContestPage />} />
-          <Route path="/admin/contests/create" element={<CreateContestPage />} />
-          <Route path="/admin/contests/edit/:slug" element={<EditContestPage />} />
-        </Route> 
+          {/* Contest System */}
+          <Route path='/contests' element={userData ? <ContestListPage /> : <Navigate to="/login" />} />
+          <Route path='/contest/:slug' element={userData ? <ContestDetailsPage /> : <Navigate to="/login" />} />
+          <Route path='/contest/:slug/problem/:problemSlug' element={userData ? <ContestInterface /> : <Navigate to="/login" />} />
+          <Route path='/contest/:slug/ranking' element={userData ? <ContestRankingPage /> : <Navigate to="/login" />} />
+          <Route path="/contest/create-private" element={<CreatePrivateContest />} /> 
+          <Route path="/contest/edit-private/:slug" element={<EditPrivateContest />} />
 
+          {/* Interview System */}
+          <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
+          <Route path='/interview/room/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
+          
+          {/* Education System */}
+          <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />
+          <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> 
 
-        {/* --- User-facing Contest Routes --- */}
-        <Route path='/contests' element={userData ? <ContestListPage /> : <Navigate to="/login" />} />
-        <Route path='/contest/:slug' element={userData ? <ContestDetailsPage /> : <Navigate to="/login" />} />
-        <Route path='/contest/:slug/problem/:problemSlug' element={userData ? <ContestInterface /> : <Navigate to="/login" />} />
-        <Route path='/contest/:slug/ranking' element={userData ? <ContestRankingPage /> : <Navigate to="/login" />} />
-        <Route path="/contest/create-private" element={<CreatePrivateContest />} /> 
-        <Route path="/contest/edit-private/:slug" element={<EditPrivateContest />} />
-
-        {/* interview routes */}
-        <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
-        <Route path='/interview/room/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
-        
-
-        {/* roadmaps */}
-        <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />
-        <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> 
-
-        {/* payment on razorpay */}
-        <Route path='/premium' element={<PricingSection />} />
-
-        {/* community page */}
-        <Route path="/community" element={<Community />} />
-        
-      </Routes>
-    </>
+          {/* Monetization & Community */}
+          <Route path='/premium' element={<PricingSection />} />
+          <Route path="/community" element={<Community />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 

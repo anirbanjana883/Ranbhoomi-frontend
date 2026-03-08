@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-// 🔥 FIX: Updated to use your new global react-hot-toast!
 import toast from "react-hot-toast"; 
 import { useSelector } from "react-redux";
 import { 
   FaCheckCircle, 
   FaTimesCircle, 
   FaPaperPlane, 
-  FaTrash
+  FaTrash,
+  FaStickyNote
 } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 import ReactMarkdown from "react-markdown";
@@ -17,6 +17,7 @@ import API from "../../api/axios.js";
 
 import DifficultyBadge from '../../component/ProblemPageComponent/DifficultyBadge';
 import TestCaseDisplay from '../../component/ProblemPageComponent/TestCaseDisplay';
+import NotesPanel from './NotesPanel'; 
 
 // --- Helper Component: Tab Button  ---
 const TabButton = ({ label, isActive, onClick }) => (
@@ -88,7 +89,6 @@ function ProblemDescription({
 
   // --- EFFECTS (API & Wrapper Unpacking) ---
   useEffect(() => {
-    // 1. Fetch Submissions
     const fetchSubmissions = async () => {
       if (setLoadingSubmissions) setLoadingSubmissions(true);
       try {
@@ -106,7 +106,6 @@ function ProblemDescription({
       }
     };
 
-    // 2. Fetch Solution
     const fetchSolution = async () => {
       setLoadingSolution(true);
       setSolutionError(null);
@@ -122,7 +121,6 @@ function ProblemDescription({
       }
     };
 
-    // 3. Fetch Comments
     const fetchComments = async () => {
       setLoadingComments(true);
       try {
@@ -194,8 +192,11 @@ function ProblemDescription({
         {!isContestMode && (
           <TabButton label="Solution" isActive={activeLeftTab === "solution"} onClick={() => setActiveLeftTab("solution")} />
         )}
+        {!isContestMode && (
+          <TabButton label="Discuss" isActive={activeLeftTab === "discuss"} onClick={() => setActiveLeftTab("discuss")} />
+        )}
         <TabButton label="Submissions" isActive={activeLeftTab === "submissions"} onClick={() => setActiveLeftTab("submissions")} />
-        <TabButton label="Discuss" isActive={activeLeftTab === "discuss"} onClick={() => setActiveLeftTab("discuss")} />
+          <TabButton label="Notes" icon={FaStickyNote} isActive={activeLeftTab === "notes"} onClick={() => setActiveLeftTab("notes")} />
       </div>
 
       {/* --- Scrollable Content Area --- */}
@@ -204,6 +205,7 @@ function ProblemDescription({
         {/* --- DESCRIPTION TAB --- */}
         {activeLeftTab === "description" && (
           <div className="animate-in fade-in duration-300">
+            {/* Badges */}
             <div className="flex items-center gap-3 mb-5">
               <DifficultyBadge difficulty={problem.difficulty} />
               <div className="flex flex-wrap gap-1.5">
@@ -218,23 +220,34 @@ function ProblemDescription({
               </div>
             </div>
             
-            <article className="max-w-none text-zinc-300 problem-description-markdown">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                {problem.description}
-              </ReactMarkdown>
-            </article>
+            {/*  EYE-SOOTHING MATTE BLACK BOX FOR DESCRIPTION */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-sm mb-8">
+              <article className="max-w-none text-zinc-300 problem-description-markdown leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                  {problem.description}
+                </ReactMarkdown>
+              </article>
+            </div>
 
-            <div className="mt-10">
-              <h2 className="text-lg font-bold text-white mb-4">Examples</h2>
+            {/* Examples Section */}
+            <div className="mt-8 border-t border-zinc-800/60 pt-6">
+              <h2 className="text-lg font-bold text-zinc-100 mb-4 tracking-tight">Examples</h2>
               {problem.testCases && problem.testCases.length > 0 ? (
                 problem.testCases.map((tc, index) => (
                   <TestCaseDisplay key={tc._id || index} testCase={tc} index={index} />
                 ))
               ) : (
-                <p className="text-zinc-500 italic text-sm">No sample test cases provided.</p>
+                <div className="bg-zinc-900/50 border border-zinc-800 border-dashed rounded-lg p-6 text-center">
+                  <p className="text-zinc-500 italic text-sm">No sample test cases provided.</p>
+                </div>
               )}
             </div>
           </div>
+        )}
+
+        {/*  NOTES TAB */}
+        {activeLeftTab === "notes" && (
+           <NotesPanel slug={slug} />
         )}
 
         {/* --- SOLUTION TAB --- */}
@@ -247,18 +260,21 @@ function ProblemDescription({
             )}
             
             {!loadingSolution && solution && (
-              <article className="max-w-none text-zinc-300 problem-description-markdown">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                  {solution}
-                </ReactMarkdown>
-              </article>
+              /* 🛡️ EYE-SOOTHING MATTE BLACK BOX FOR SOLUTION */
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 md:p-6 shadow-sm">
+                <article className="max-w-none text-zinc-300 problem-description-markdown leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                    {solution}
+                  </ReactMarkdown>
+                </article>
+              </div>
             )}
             
             {!loadingSolution && solutionError && (
               <div className="flex flex-col items-center justify-center h-full text-center p-4 mt-10">
                 <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-xl max-w-sm w-full shadow-lg">
                   <IoIosLock size={44} className="text-amber-500 mb-4 mx-auto" />
-                  <h2 className="text-lg font-bold text-white">Solution Locked</h2>
+                  <h2 className="text-lg font-bold text-white tracking-tight">Solution Locked</h2>
                   <p className="text-zinc-400 mt-2 text-sm leading-relaxed">
                     {solutionError}
                   </p>
@@ -271,17 +287,17 @@ function ProblemDescription({
         {/* --- SUBMISSIONS TAB --- */}
         {activeLeftTab === "submissions" && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-lg font-bold text-white mb-4">My Submissions</h2>
+            <h2 className="text-lg font-bold text-zinc-100 mb-4 tracking-tight">My Submissions</h2>
             {loadingSubmissions ? (
               <div className="flex justify-center items-center h-48">
                 <div className="w-8 h-8 border-4 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
               </div>
             ) : !submissions || submissions.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center p-4 mt-10">
-                <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-xl max-w-sm w-full">
-                  <FaPaperPlane size={32} className="text-zinc-600 mb-4 mx-auto" />
-                  <h2 className="text-base font-bold text-white">No Submissions Yet</h2>
-                  <p className="text-zinc-400 mt-2 text-sm">
+                <div className="p-8 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-xl max-w-sm w-full">
+                  <FaPaperPlane size={32} className="text-zinc-700 mb-4 mx-auto" />
+                  <h2 className="text-sm font-bold text-zinc-300 tracking-tight">No Submissions Yet</h2>
+                  <p className="text-zinc-500 mt-2 text-xs">
                     You have not submitted any solutions for this problem.
                   </p>
                 </div>
@@ -328,8 +344,8 @@ function ProblemDescription({
                    <div className="w-6 h-6 border-2 border-zinc-800 border-t-red-500 rounded-full animate-spin"></div>
                 </div>
               ) : !comments || comments.length === 0 ? (
-                <div className="text-center py-10">
-                   <p className="text-sm text-zinc-500">No discussions yet. Start the conversation!</p>
+                <div className="text-center py-10 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-xl">
+                   <p className="text-sm text-zinc-500 font-medium">No discussions yet. Start the conversation!</p>
                 </div>
               ) : (
                 comments.map((comment) => (
@@ -349,7 +365,7 @@ function ProblemDescription({
                     <div className="flex-grow min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-sm font-semibold text-zinc-200">{comment.user?.name || "Anonymous"}</span>
-                          <span className="text-[11px] text-zinc-500 font-medium">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">{new Date(comment.createdAt).toLocaleDateString()}</span>
                       </div>
                       
                       <div className="bg-zinc-900 border border-zinc-800/80 rounded-lg rounded-tl-none p-3.5 relative hover:border-zinc-700 transition-colors">
@@ -361,7 +377,7 @@ function ProblemDescription({
                           {userData && userData._id === comment.user?._id && (
                               <button 
                                   onClick={() => handleDeleteComment(comment._id)}
-                                  className="absolute top-2 right-2 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 bg-zinc-900 rounded"
+                                  className="absolute top-2 right-2 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 bg-zinc-950 rounded"
                                   title="Delete Comment"
                               >
                                   <FaTrash size={12} />

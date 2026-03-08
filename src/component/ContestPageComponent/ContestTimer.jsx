@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaClock } from 'react-icons/fa';
 
-const ContestTimer = ({ endTime, onTimeUp }) => {
-  // Helper to get seconds remaining
+export default function ContestTimer({ endTime, onTimeUp }) {
   const getSecondsRemaining = () => {
     const total = Date.parse(endTime) - Date.now();
     return total > 0 ? Math.floor(total / 1000) : 0;
@@ -11,7 +10,6 @@ const ContestTimer = ({ endTime, onTimeUp }) => {
   const [timeLeft, setTimeLeft] = useState(getSecondsRemaining());
 
   useEffect(() => {
-    // Update every second
     const timerId = setInterval(() => {
       const remaining = getSecondsRemaining();
       setTimeLeft(remaining);
@@ -22,11 +20,9 @@ const ContestTimer = ({ endTime, onTimeUp }) => {
       }
     }, 1000);
 
-    // Cleanup
     return () => clearInterval(timerId);
   }, [endTime, onTimeUp]);
 
-  // Format HH:MM:SS
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -34,20 +30,17 @@ const ContestTimer = ({ endTime, onTimeUp }) => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Critical State: Less than 5 minutes
   const isCritical = timeLeft < 300; 
 
   return (
     <div className={`
-      flex items-center gap-2 px-4 py-1.5 rounded-lg border font-mono text-lg font-bold transition-all duration-300
+      flex items-center gap-2 px-3 py-1.5 rounded border font-mono text-sm font-bold transition-colors duration-300
       ${isCritical 
-        ? "text-red-500 border-red-600/50 bg-red-950/20 animate-pulse shadow-[0_0_15px_rgba(255,0,0,0.4)]" 
-        : "text-orange-500 border-orange-900/40 bg-black shadow-[0_0_10px_rgba(255,69,0,0.15)]"}
+        ? "text-red-400 border-red-500/50 bg-red-500/10 animate-pulse" 
+        : "text-zinc-300 border-zinc-700 bg-zinc-900"}
     `}>
-      <FaClock className={isCritical ? "animate-spin" : ""} size={16} />
+      <FaClock className={isCritical ? "animate-spin" : "text-zinc-500"} size={12} />
       <span>{formatTime(timeLeft)}</span>
     </div>
   );
-};
-
-export default ContestTimer;
+}

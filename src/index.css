@@ -101,3 +101,58 @@ html, body {
 textarea, pre, code {
   font-family: 'JetBrains Mono', monospace !important;
 }
+
+/* ── Table-only scrollbar ── */
+        .prob-scroll::-webkit-scrollbar        { width: 5px; height: 5px; }
+        .prob-scroll::-webkit-scrollbar-track  { background: transparent; }
+        .prob-scroll::-webkit-scrollbar-thumb  { background: #3f3f46; border-radius: 99px; }
+        .prob-scroll::-webkit-scrollbar-thumb:hover { background: #71717a; }
+
+        /* ── Dropdown scrollbar ── */
+        .drop-scroll::-webkit-scrollbar        { width: 4px; }
+        .drop-scroll::-webkit-scrollbar-track  { background: transparent; }
+        .drop-scroll::-webkit-scrollbar-thumb  { background: #3f3f46; border-radius: 99px; }
+
+        /* ── Filter pill ── */
+        .fpill {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 12px;
+          background: #27272a; border: 1px solid #3f3f46;
+          color: #e4e4e7; font-size: 12.5px; font-weight: 500;
+          border-radius: 6px; cursor: pointer; white-space: nowrap;
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
+          font-family: inherit;
+        }
+        .fpill:hover:not(:disabled) { background: #3f3f46; color: #fafafa; border-color: #52525b; }
+        .fpill:disabled              { opacity: 0.4; cursor: default; }
+
+        /* ── Table header ── */
+        .th {
+          padding: 10px 14px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+          text-transform: uppercase; color: #71717a;
+          background: #18181b; border-bottom: 1px solid #27272a;
+          position: sticky; top: 0; z-index: 1;
+          font-family: inherit;
+        }
+
+        /* ── Table cell ── */
+        .td { padding: 11px 14px; }
+
+        /* ── Row hover ── */
+        .prob-row { border-bottom: 1px solid rgba(39,39,42,0.6); transition: background 0.12s; }
+        .prob-row:last-child { border-bottom: none; }
+        .prob-row:hover { background: rgba(39,39,42,0.55); }
+        .prob-row:hover .ptitle { color: #f87171; }
+
+        /* ── Problem title link ── */
+        .ptitle {
+          color: #f4f4f5; font-size: 13.5px; font-weight: 500;
+          text-decoration: none; transition: color 0.15s;
+        }
+
+        /* ── Daily card left accent ── */
+        .daily-accent {
+          border-left: 2px solid #dc2626;
+          background: linear-gradient(90deg, rgba(127,29,29,0.08), transparent);
+        }

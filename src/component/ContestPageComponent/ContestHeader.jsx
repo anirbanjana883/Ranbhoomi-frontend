@@ -1,41 +1,93 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaFlagCheckered, FaList } from 'react-icons/fa';
+import { FaChevronLeft, FaFlagCheckered, FaPlay, FaPaperPlane } from 'react-icons/fa';
 import ContestTimer from './ContestTimer';
 
-const ContestHeader = ({ contest, currentProblemSlug, totalProblems }) => {
+export default function ContestHeader({ 
+  contest, 
+  currentProblemSlug, 
+  totalProblems,
+  handleRun,       
+  handleSubmit,    
+  isSubmitting,
+  isRunning,      // 👈 Added Prop for Run State
+  runStatusText   // 👈 Added Prop for Run Progress
+}) {
   const navigate = useNavigate();
 
-  // Find current index (1-based for display)
   const currentIndex = contest?.problems?.findIndex(
     p => p.problem.slug === currentProblemSlug
   ) + 1 || 1;
 
   return (
-    <header className="h-16 bg-[#050505] border-b border-orange-900/30 flex items-center justify-between px-6 z-20 shrink-0">
+    <header className="h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 sm:px-6 z-20 shrink-0 shadow-sm">
+      
       {/* LEFT: Navigation & Title */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-4">
         <button 
           onClick={() => navigate(`/contest/${contest.slug}`)}
-          className="p-2 rounded-full border border-gray-800 text-gray-400 hover:text-orange-500 hover:border-orange-500/50 hover:bg-orange-950/20 transition-all"
+          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+          title="Back to Arena Dashboard"
         >
-          <FaChevronLeft size={14} />
+          <FaChevronLeft size={12} />
         </button>
 
-        <div>
-          <h1 className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-500">
+        <div className="flex items-center gap-3">
+          <h1 className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 hidden md:block">
             {contest.title}
           </h1>
-          <div className="flex items-center gap-2 text-white font-bold text-lg">
-            <span className="text-orange-500">Problem {currentIndex}</span>
-            <span className="text-gray-700">/</span>
-            <span className="text-gray-400">{totalProblems}</span>
+          <div className="h-3 w-px bg-zinc-800 hidden md:block"></div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold">
+            <span className="text-zinc-200">Problem {currentIndex}</span>
+            <span className="text-zinc-600">/</span>
+            <span className="text-zinc-500">{totalProblems}</span>
           </div>
         </div>
       </div>
 
-      {/* RIGHT: Timer & Actions */}
-      <div className="flex items-center gap-6">
+      {/* RIGHT: Actions & Timer */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        
+        {/* 🚀 LIVE EXECUTION BUTTONS */}
+        <div className="flex items-center gap-2 mr-1 sm:mr-2">
+          
+          {/* FAANG RUN BUTTON */}
+          <button
+            onClick={handleRun}
+            disabled={isRunning || isSubmitting}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-md font-semibold text-xs transition-colors duration-200 bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isRunning ? (
+              <div className="w-3 h-3 border-2 border-zinc-400 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <FaPlay size={10} className="text-emerald-500" />
+            )}
+            <span className="hidden sm:inline">
+              {isRunning ? runStatusText || "Running..." : "Run"}
+            </span>
+            <span className="sm:hidden">{isRunning ? "..." : "Run"}</span>
+          </button>
+
+          {/* FAANG SUBMIT BUTTON */}
+          <button
+            onClick={handleSubmit}
+            disabled={isRunning || isSubmitting}
+            className="flex items-center gap-1.5 px-4 sm:px-6 py-1.5 rounded-md font-semibold text-xs transition-colors duration-200 bg-red-600 text-white border border-transparent hover:bg-red-500 shadow-sm disabled:opacity-50 disabled:cursor-wait focus:outline-none"
+          >
+            {isSubmitting ? (
+              <div className="w-3 h-3 border-2 border-red-200 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <FaPaperPlane size={10} />
+            )}
+            <span className="hidden sm:inline">{isSubmitting ? "Judging..." : "Submit"}</span>
+            <span className="sm:hidden">{isSubmitting ? "..." : "Submit"}</span>
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="h-4 w-px bg-zinc-800 hidden sm:block"></div>
+
+        {/* Timer */}
         <ContestTimer 
           endTime={contest.endTime} 
           onTimeUp={() => {
@@ -44,16 +96,16 @@ const ContestHeader = ({ contest, currentProblemSlug, totalProblems }) => {
           }} 
         />
         
+        {/* Finish Button */}
         <button 
           onClick={() => navigate('/contests')}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-red-900/10 border border-red-600/30 text-red-400 text-sm font-bold hover:bg-red-600 hover:text-white hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all"
+          className="hidden lg:flex items-center gap-2 px-4 py-1.5 rounded-md bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs font-semibold hover:bg-zinc-800 hover:text-white transition-colors"
         >
-          <FaFlagCheckered />
-          <span className="hidden sm:inline">Finish</span>
+          <FaFlagCheckered size={12}/>
+          <span>Finish</span>
         </button>
+
       </div>
     </header>
   );
-};
-
-export default ContestHeader;
+}

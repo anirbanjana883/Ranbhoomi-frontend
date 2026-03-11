@@ -2,40 +2,45 @@ import React, { useEffect, useState } from 'react';
 import { Tldraw, useEditor, createTLStore, throttle } from '@tldraw/tldraw';
 import '@tldraw/tldraw/tldraw.css';
 
-// This is a small helper component that sits inside Tldraw
-// Its only job is to handle the socket communication
+// ============================================================================
+// --- Tldraw Helper & Socket Sync ---
+// ============================================================================
 const TldrawSocketWrapper = ({ socket, roomID }) => {
   const editor = useEditor();
 
+  // 🚀 STRICT TUF THEME: Force tldraw into Dark Mode to match the IDE
+  useEffect(() => {
+    if (editor) {
+      // FIX: Updated to Tldraw v2 API for theming
+      editor.user.updateUserPreferences({ colorScheme: 'dark' });
+    }
+  }, [editor]);
+
   // 1. Send our changes to others
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !editor) return;
 
-    // This function runs every time the user makes a change
     const handleChange = (change) => {
-      // We only care about changes made by the user
+      // Only broadcast changes actually made by the human user
       if (change.source !== 'user') return;
       
       const snapshot = editor.getSnapshot();
       socket.emit("tldraw-changed", { roomID, snapshot });
     };
     
-    // We "throttle" the function to avoid sending too many messages
-    // This sends an update a maximum of once every 50ms
+    // Throttle to 50ms to prevent flooding the WebSockets
     const throttledHandleChange = throttle(handleChange, 50); 
-
-    // Listen for changes and call our throttled function
     const unsubscribe = editor.store.listen(throttledHandleChange);
+    
     return () => unsubscribe();
   }, [editor, socket, roomID]);
 
   // 2. Receive changes from others
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !editor) return;
 
     const handleUpdate = ({ snapshot }) => {
-      // Load the snapshot from the other user
-      // We wrap this in requestAnimationFrame to prevent flickers
+      // Load the snapshot inside requestAnimationFrame to prevent UI flickering
       requestAnimationFrame(() => {
         editor.loadSnapshot(snapshot);
       });
@@ -47,23 +52,28 @@ const TldrawSocketWrapper = ({ socket, roomID }) => {
     };
   }, [editor, socket]);
 
-  return null; // This component renders nothing itself
+  return null; 
 };
 
-// This is the main Whiteboard component
+// ============================================================================
+// --- Main Whiteboard Component ---
+// ============================================================================
 const Whiteboard = ({ socket, roomID }) => {
-  // Create a store for the Tldraw editor
+  // Create an isolated store for the Tldraw editor
   const [store] = useState(() => createTLStore());
   
   return (
-    // This div MUST be absolute to fill its 'relative' parent
-    <div className="absolute top-0 left-0 w-full h-full z-10">
+    // 🚀 FIXED: Added bg-zinc-950 so there is no white flash before tldraw mounts
+    <div className="absolute inset-0 w-full h-full z-10 bg-zinc-950 font-sans">
       <Tldraw 
         store={store} 
-        persistenceKey={`ranbhoomi_${roomID}`} // Optional: saves drawing to local storage
+        persistenceKey={`ranbhoomi_${roomID}`} 
         forceMobile={false}
+        onMount={(editor) => {
+          // Double-lock the dark mode on mount for instant application
+          editor.user.updateUserPreferences({ colorScheme: 'dark' });
+        }}
       >
-        {/* Pass the socket and roomID to our helper */}
         <TldrawSocketWrapper socket={socket} roomID={roomID} />
       </Tldraw>
     </div>

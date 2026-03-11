@@ -3,7 +3,6 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { io } from "socket.io-client"; // Added Socket.io client
-import { serverUrl } from "../../App";
 import {
   FaArrowLeft,
   FaPlay,

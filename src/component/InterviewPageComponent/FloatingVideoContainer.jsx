@@ -1,200 +1,141 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import VideoTile from "./VideoTile";
-import {
-  FaEye,
-  FaEyeSlash,
-  FaMicrophone,
-  FaMicrophoneSlash,
-  FaVideo,
-  FaVideoSlash,
-  FaPhoneSlash,
-} from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-const FloatingVideoContainer = ({
-  localVideoRef,
-  remoteVideoRef,
+export default function FloatingVideoContainer({
+  localStream,
+  remoteStream,
   isLocalMuted,
   isLocalVideoOff,
-  toggleMute,
-  toggleVideo,
-  handleLeave,
-}) => {
-  const [isLocalHidden, setIsLocalHidden] = useState(false);
-  const [position, setPosition] = useState({ x: 30, y: 30 });
-  const [targetPos, setTargetPos] = useState({ x: 30, y: 30 });
-  const [size, setSize] = useState({ width: 300, height: 360 });
-  const [dragging, setDragging] = useState(false);
-  const [resizing, setResizing] = useState(false);
-
+  hidden = false,
+}) {
   const containerRef = useRef(null);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const resizeStart = useRef({ width: 0, height: 0, x: 0, y: 0 });
-
-  /* ---------------- Smooth Animation ---------------- */
-  useEffect(() => {
-    let frame;
-    const smoothMove = () => {
-      setPosition((p) => {
-        const dx = targetPos.x - p.x;
-        const dy = targetPos.y - p.y;
-        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return targetPos;
-        return { x: p.x + dx * 0.2, y: p.y + dy * 0.2 };
-      });
-      frame = requestAnimationFrame(smoothMove);
-    };
-    frame = requestAnimationFrame(smoothMove);
-    return () => cancelAnimationFrame(frame);
-  }, [targetPos]);
-
-  /* ---------------- Drag logic ---------------- */
-  const startDrag = (e) => {
-    if (resizing) return;
-    setDragging(true);
-    const rect = containerRef.current.getBoundingClientRect();
-    dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  const handleMouseMove = (e) => {
-    if (dragging) {
-      setTargetPos({
-        x: e.clientX - dragOffset.current.x,
-        y: e.clientY - dragOffset.current.y,
-      });
-    } else if (resizing) {
-      const dx = e.clientX - resizeStart.current.x;
-      const dy = e.clientY - resizeStart.current.y;
-      setSize({
-        width: Math.max(250, resizeStart.current.width + dx),
-        height: Math.max(220, resizeStart.current.height + dy),
-      });
-    }
-  };
-
-  const stopAll = () => {
-    setDragging(false);
-    setResizing(false);
-  };
-
-  /* ---------------- Resize logic ---------------- */
-  const startResize = (e) => {
-    e.stopPropagation();
-    setResizing(true);
-    resizeStart.current = {
-      width: size.width,
-      height: size.height,
-      x: e.clientX,
-      y: e.clientY,
-    };
-  };
-
-  useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", stopAll);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", stopAll);
-    };
+  const [isLocalHidden, setIsLocalHidden] = useState(false);
+  
+  const [pos, setPos] = useState(() => {
+    try {
+      const raw = localStorage.getItem("floatingVideoPos");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          if (parsed.x > -1000 && parsed.y > -1000) {
+            // 🚀 FIX 8: Constrain drag boundaries better. w-64 is 256px, use 260 for safety margin.
+            return { 
+              x: Math.max(10, Math.min(window.innerWidth - 260, parsed.x)), 
+              y: Math.max(10, Math.min(window.innerHeight - 350, parsed.y)) 
+            };
+          }
+        }
+      }
+    } catch (e) {}
+    return { x: 20, y: 80 }; 
   });
 
-  /* ---------------- Render ---------------- */
+  const posRef = useRef(pos);
+  useEffect(() => { posRef.current = pos; }, [pos]);
+
+  // ==========================================
+  // 🖱️ Safe Dragging Logic
+  // ==========================================
+  const handlePointerDown = (e) => {
+    if (e.button !== 0) return; 
+    e.preventDefault();
+    const el = containerRef.current;
+    if (!el) return;
+
+    try { el.setPointerCapture(e.pointerId); } catch {}
+
+    const offsetX = e.clientX - pos.x;
+    const offsetY = e.clientY - pos.y;
+
+    const handlePointerMove = (moveEvent) => {
+      let newX = moveEvent.clientX - offsetX;
+      let newY = moveEvent.clientY - offsetY;
+      
+      // 🚀 FIX 8: Updated bounds here as well
+      newX = Math.max(10, Math.min(window.innerWidth - 260, newX));
+      newY = Math.max(10, Math.min(window.innerHeight - 350, newY));
+      
+      setPos({ x: newX, y: newY });
+    };
+
+    const handlePointerUp = (upEvent) => {
+      try { el.releasePointerCapture(upEvent.pointerId); } catch {}
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      localStorage.setItem("floatingVideoPos", JSON.stringify(posRef.current));
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
+
   return (
     <div
       ref={containerRef}
-      onMouseDown={startDrag}
-      className={`fixed z-40 rounded-2xl overflow-hidden border border-gray-800 bg-black/70 backdrop-blur-md shadow-[0_0_25px_rgba(0,0,0,0.6)] select-none transition-all duration-150 ease-out`}
-      style={{
-        top: `${position.y}px`,
-        left: `${position.x}px`,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        cursor: dragging ? "grabbing" : "grab",
+      onPointerDown={handlePointerDown}
+      className="fixed z-50 w-64 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 shadow-2xl backdrop-blur-md cursor-grab active:cursor-grabbing hover:border-zinc-700 font-sans flex flex-col group"
+      style={{ 
+        left: `${pos.x}px`, 
+        top: `${pos.y}px`, 
+        height: "340px",
+        touchAction: "none",
+        visibility: hidden ? "hidden" : "visible",
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? "none" : "auto",
+        transform: hidden ? "scale(0.95)" : "scale(1)",
+        transition: "opacity 0.2s, transform 0.2s, visibility 0.2s"
       }}
+      title="Drag to move"
     >
-      {/* --- Video Area --- */}
-      <div className="flex flex-col w-full h-[calc(100%-60px)]">
-        <div className="flex-1 relative">
+      <div className="flex flex-col w-full h-[calc(100%-32px)] bg-zinc-900 p-1 gap-1">
+        
+        {/* Remote Video */}
+        <div className="flex-1 relative min-h-0 rounded-md overflow-hidden">
           <VideoTile
-            videoRef={remoteVideoRef}
+            stream={remoteStream}
             label="Remote"
-            isMuted={false}
+            isMuted={false} 
             isVideoOff={false}
-            accent="border-orange-700/70"
           />
         </div>
 
-        {!isLocalHidden && (
-          <div className="flex-1 relative">
-            <VideoTile
-              videoRef={localVideoRef}
-              label="You"
-              isMuted={isLocalMuted}
-              isVideoOff={isLocalVideoOff}
-              accent="border-gray-700/70"
-            />
-          </div>
-        )}
+        {/* Local Video */}
+        <div 
+          className={`relative min-h-0 rounded-md overflow-hidden transition-all duration-300 origin-bottom
+            ${isLocalHidden ? 'flex-none h-0 opacity-0' : 'flex-1 opacity-100'}
+          `}
+        >
+          <VideoTile
+            stream={localStream}
+            label="You"
+            isMuted={isLocalMuted} 
+            isVideoOff={isLocalVideoOff}
+          />
+        </div>
       </div>
 
-      {/* --- Controls Area --- */}
-      <div className="h-[60px] flex items-center justify-center gap-3 border-t border-gray-700 bg-black/60 backdrop-blur-sm">
-        <ControlButton
-          onClick={toggleMute}
-          active={isLocalMuted}
-          title={isLocalMuted ? "Unmute" : "Mute"}
-        >
-          {isLocalMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
-        </ControlButton>
-        <ControlButton
-          onClick={toggleVideo}
-          active={isLocalVideoOff}
-          title={isLocalVideoOff ? "Turn camera on" : "Turn camera off"}
-        >
-          {isLocalVideoOff ? <FaVideoSlash /> : <FaVideo />}
-        </ControlButton>
-        <ControlButton
-          onClick={handleLeave}
-          danger
-          title="Leave Meeting"
-        >
-          <FaPhoneSlash />
-        </ControlButton>
-
+      {/* Slim Footer Controls */}
+      <div 
+        onPointerDown={(e) => e.stopPropagation()} 
+        className="h-[32px] shrink-0 w-full flex items-center justify-between border-t border-zinc-800 bg-zinc-950 px-3 cursor-default"
+      >
+        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+          Live Feed
+        </span>
+        
         <button
-          onClick={() => setIsLocalHidden((p) => !p)}
-          className="ml-auto mr-3 text-gray-400 hover:text-white transition"
+          onClick={() => setIsLocalHidden(!isLocalHidden)}
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
           title={isLocalHidden ? "Show my video" : "Hide my video"}
         >
-          {isLocalHidden ? <FaEyeSlash /> : <FaEye />}
+          {isLocalHidden ? <FaEyeSlash size={12} /> : <FaEye size={12} />}
+          <span className="text-[9px] font-bold uppercase tracking-widest leading-none">
+            {isLocalHidden ? "Show Me" : "Hide Me"}
+          </span>
         </button>
       </div>
 
-      {/* Resize Handle */}
-      <div
-        onMouseDown={startResize}
-        className="absolute bottom-1 right-1 w-3 h-3 bg-orange-600/60 hover:bg-orange-600 cursor-se-resize rounded-sm"
-      />
     </div>
   );
-};
-
-/* ---------------- Button ---------------- */
-const ControlButton = ({ onClick, children, active, danger, title }) => {
-  const base =
-    "p-3 rounded-full transition-transform hover:scale-110 text-white";
-  const color = danger
-    ? "bg-red-600 hover:bg-red-700 shadow-[0_0_10px_rgba(255,0,0,0.5)]"
-    : active
-    ? "bg-orange-600 hover:bg-orange-700 shadow-[0_0_10px_rgba(255,69,0,0.5)]"
-    : "bg-gray-800 hover:bg-gray-700";
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`${base} ${color}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-export default FloatingVideoContainer;
+}

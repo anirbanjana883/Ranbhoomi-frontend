@@ -140,7 +140,7 @@ function App() {
 
           {/* Interview System */}
           <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
-          <Route path='/interview/room/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
+          <Route path='/interview/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
           
           {/* Education System */}
           <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />

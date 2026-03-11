@@ -173,12 +173,13 @@ export default function ContestListPage() {
           <div className="w-px h-5 bg-zinc-800 shrink-0 hidden sm:block" />
           
           <div className="min-w-0 flex flex-col justify-center">
-            <p className="text-[9px] uppercase tracking-widest font-bold text-zinc-500 leading-none mb-1">
-              Ranbhoomi
-            </p>
+            
             <h1 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight leading-none truncate">
-              Contest Arena
+              Ranbhoomi Contest Arena
             </h1>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-red-500 leading-none mt-1 hidden sm:block">
+              Compete with ather warriors
+            </p>
           </div>
         </div>
 

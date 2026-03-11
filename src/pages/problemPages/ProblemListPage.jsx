@@ -172,10 +172,10 @@ export default function ProblemListPage() {
           <div className="w-px h-5 bg-zinc-800 shrink-0 hidden sm:block" />
 
           <div className="min-w-0 flex flex-col justify-center">
-            <h1 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight leading-none truncate">
+            <h1 className="ttext-sm sm:text-base font-bold text-zinc-100 tracking-tight leading-none truncate">
               Ranbhoomi Problemset
             </h1>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-zinc-500 leading-none mt-1 hidden sm:block">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-red-500 leading-none mt-1 hidden sm:block">
               Master Data Structures & Algorithms
             </p>
           </div>

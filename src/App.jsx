@@ -37,10 +37,11 @@ import ContestRankingPage from './pages/contestPages/ContestRankingPage';
 import InterviewLobby from './pages/interviewPages/InterviewLobby';
 import InterviewRoom from './pages/interviewPages/InterviewRoom';
 import RoadmapListPage from './pages/roadmapPages/RoadmapListPage';
-import RoadmapDetailsPage from './pages/roadmapPages/RoadmapDetailsPage';
 import CreatePrivateContest from './pages/premiumUser/CreatePrivateContest';
 import EditPrivateContest from './pages/premiumUser/EditPrivateContest';
 import Community from './pages/Community/Community';
+import RoadmapSheet from './pages/roadmapPages/RoadmapSheet';
+import RoadmapAdminPage from './pages/roadmapPages/RoadmapAdminPage';
 
 export const serverUrl = "http://localhost:5000";
 
@@ -128,6 +129,7 @@ function App() {
             <Route path="/admin/contests" element={<AdminContestPage />} />
             <Route path="/admin/contests/create" element={<CreateContestPage />} />
             <Route path="/admin/contests/edit/:slug" element={<EditContestPage />} />
+            <Route path="/admin/roadmap" element={<RoadmapAdminPage />} />
           </Route> 
 
           {/* Contest System */}
@@ -142,9 +144,9 @@ function App() {
           <Route path='/interview' element={userData ? <InterviewLobby /> : <Navigate to="/login" />} />
           <Route path='/interview/:roomID' element={userData ? <InterviewRoom /> : <Navigate to="/login" />} />
           
-          {/* Education System */}
+          {/* Education System (Roadmaps) */}
           <Route path='/roadmaps' element={userData ? <RoadmapListPage /> : <Navigate to="/login" />} />
-          <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapDetailsPage /> : <Navigate to="/login" />} /> 
+          <Route path='/roadmap/:roadmapId' element={userData ? <RoadmapSheet /> : <Navigate to="/login" />} />
 
           {/* Monetization & Community */}
           <Route path='/premium' element={<PricingSection />} />

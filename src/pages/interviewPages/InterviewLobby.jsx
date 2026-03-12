@@ -37,7 +37,7 @@ function InterviewLobby() {
                     className="group flex items-center gap-2 text-zinc-400 font-semibold text-xs tracking-wider bg-zinc-900 border border-zinc-800 rounded-md py-1.5 px-3 transition-colors hover:border-zinc-700 hover:text-zinc-200 shrink-0"
                 >
                     <FaArrowLeft size={10} className="group-hover:-translate-x-0.5 transition-transform" />
-                    <span className="uppercase hidden sm:inline">Back</span>
+                    <span className="uppercase hidden sm:inline">Home</span>
                 </button>
 
                 <div className="w-px h-5 bg-zinc-800 shrink-0 hidden sm:block mx-4" />

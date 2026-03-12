@@ -1,58 +1,81 @@
 import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast"; // Using react-hot-toast
-import { serverUrl } from "../../App.jsx";
+import toast from "react-hot-toast";
 import {
-  FaArrowLeft,
-  FaEdit,
-  FaTrashAlt,
-  FaPlus,
-  FaPlay,
-  FaCalendarAlt,
-  FaHistory,
-  FaTrophy,
-  FaSyncAlt,
+  FaArrowLeft, FaEdit, FaTrashAlt, FaPlus, FaPlay,
+  FaCalendarAlt, FaHistory, FaTrophy, FaSyncAlt, FaCircle,
 } from "react-icons/fa";
 import API from "../../api/axios.js";
 
-// --- Loading Spinner (TUF Minimalist) ---
+/* ─── Loading ──────────────────────────────────────────────────────── */
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-    <div className="w-12 h-12 border-4 border-zinc-800 border-t-red-600 rounded-full animate-spin"></div>
+  <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 gap-4">
+    <div className="relative w-12 h-12">
+      <div className="absolute inset-0 border border-zinc-800 rounded-full" />
+      <div className="absolute inset-0 border-t-2 border-red-600 rounded-full animate-spin" />
+    </div>
+    <p className="text-[10px] text-zinc-600 tracking-widest uppercase font-mono">Loading arenas…</p>
   </div>
 );
 
-// --- Section Header Component (TUF Clean Lines) ---
-const SectionHeader = ({ icon, title, count }) => (
-  <div className="flex items-center gap-3 mb-4 border-b border-zinc-800/60 pb-3">
-    <div className="text-zinc-500 shrink-0">{icon}</div>
-    <h2 className="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-      {title}
-      <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-500">
-        {count}
+/* ─── Section config ───────────────────────────────────────────────── */
+const SECTIONS = [
+  {
+    key: "live",
+    label: "Live Arenas",
+    rankable: true,
+    emptyText: "No contests are live right now.",
+    badge: (
+      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+        <FaCircle size={6} className="animate-pulse" /> Live
       </span>
-    </h2>
-  </div>
-);
+    ),
+    icon: <FaPlay size={12} className="text-emerald-400" />,
+  },
+  {
+    key: "upcoming",
+    label: "Upcoming Battles",
+    rankable: false,
+    emptyText: "No upcoming contests scheduled.",
+    badge: (
+      <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+        Upcoming
+      </span>
+    ),
+    icon: <FaCalendarAlt size={12} className="text-amber-400" />,
+  },
+  {
+    key: "past",
+    label: "Past Archives",
+    rankable: true,
+    emptyText: "No past contests found.",
+    badge: (
+      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-md">
+        Archived
+      </span>
+    ),
+    icon: <FaHistory size={12} className="text-zinc-500" />,
+  },
+];
 
-// --- Main Page Component ---
-export default function AdminContestPage() {
-  const [contests, setContests] = useState({
-    upcoming: [],
-    live: [],
-    past: [],
+const fmtDate = (d) =>
+  new Date(d).toLocaleString(undefined, {
+    month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const [calculatingSlug, setCalculatingSlug] = useState(null);
 
-  // Fetch all contests
+/* ══════════════════════════════════════════════════════════════════ */
+export default function AdminContestPage() {
+  const [contests,        setContests]        = useState({ upcoming: [], live: [], past: [] });
+  const [loading,         setLoading]         = useState(true);
+  const [calculatingSlug, setCalculatingSlug] = useState(null);
+  const navigate = useNavigate();
+
   const fetchContests = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await API.get(`/contests`);
-      setContests(data.data || data); // Adjust based on your ApiResponse structure
+      const { data } = await API.get("/contests");
+      setContests(data.data || data);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to fetch contests.");
       setContests({ upcoming: [], live: [], past: [] });
@@ -61,230 +84,212 @@ export default function AdminContestPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchContests();
-  }, [fetchContests]);
+  useEffect(() => { fetchContests(); }, [fetchContests]);
 
-  // --- Delete Handler ---
   const handleDelete = async (slug, title) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the contest "${title}"? This is irreversible.`,
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
     try {
-      // Calls DELETE /api/contests/:slug (Admin Auth Required)
       await API.delete(`/contests/${slug}`);
-      toast.success(`Contest "${title}" deleted successfully.`);
+      toast.success(`"${title}" deleted.`);
       fetchContests();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete contest.");
+      toast.error(err.response?.data?.message || "Failed to delete.");
     }
   };
 
-  // --- Calculate Ranking Handler ---
   const handleCalculate = async (slug, title) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to (re)calculate rankings for "${title}"? This will process all submissions.`,
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm(`Recalculate rankings for "${title}"?`)) return;
     setCalculatingSlug(slug);
     try {
-      // Calls POST /api/contests/:slug/calculate (Admin Auth Required)
       await API.post(`/contests/${slug}/calculate`, {});
-      toast.success(`Rankings for "${title}" calculated!`);
+      toast.success(`Rankings calculated for "${title}"!`);
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to calculate rankings.",
-      );
+      toast.error(err.response?.data?.message || "Calculation failed.");
     } finally {
       setCalculatingSlug(null);
     }
   };
 
-  if (
-    loading &&
-    !contests.live.length &&
-    !contests.upcoming.length &&
-    !contests.past.length
-  )
-    return <LoadingSpinner />;
+  const totalCount =
+    contests.live.length + contests.upcoming.length + contests.past.length;
 
-  // Helper to render a table for a contest category
-  const renderContestTable = (
-    title,
-    icon,
-    data,
-    isActionableRankings = false,
-  ) => (
-    <section className="mb-12">
-      <SectionHeader icon={icon} title={title} count={data.length} />
+  if (loading && totalCount === 0) return <LoadingSpinner />;
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left whitespace-nowrap min-w-[700px]">
-            <thead className="bg-zinc-950 border-b border-zinc-800">
-              <tr>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-zinc-500 w-[40%]">
-                  Title
-                </th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-zinc-500 w-[20%]">
-                  Start Time
-                </th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-zinc-500 w-[20%]">
-                  End Time
-                </th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-zinc-500 text-right w-[20%]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              {data.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="4"
-                    className="px-6 py-8 text-center text-sm font-medium text-zinc-500 bg-zinc-900/50"
-                  >
-                    No contests in this category.
-                  </td>
-                </tr>
-              ) : (
-                data.map((contest) => (
-                  <tr
-                    key={contest._id}
-                    className="hover:bg-zinc-800/30 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <Link
-                        to={`/admin/contests/edit/${contest.slug}`}
-                        className="text-sm font-medium text-zinc-200 hover:text-red-400 transition-colors"
-                      >
-                        {contest.title}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-400">
-                      {new Date(contest.startTime).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-zinc-400">
-                      {new Date(contest.endTime).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Calculate Button (Only for Live/Past) */}
-                        {isActionableRankings && (
-                          <button
-                            onClick={() =>
-                              handleCalculate(contest.slug, contest.title)
-                            }
-                            disabled={calculatingSlug === contest.slug}
-                            className="p-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md hover:text-amber-400 hover:border-amber-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Calculate Rankings"
-                          >
-                            {calculatingSlug === contest.slug ? (
-                              <FaSyncAlt
-                                size={14}
-                                className="animate-spin text-amber-500"
-                              />
-                            ) : (
-                              <FaTrophy size={14} />
-                            )}
-                          </button>
-                        )}
-
-                        {/* Edit Button */}
-                        <Link
-                          to={`/admin/contests/edit/${contest.slug}`}
-                          className="p-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md hover:text-blue-400 hover:border-blue-500/50 transition-colors"
-                          title="Edit Contest"
-                        >
-                          <FaEdit size={14} />
-                        </Link>
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() =>
-                            handleDelete(contest.slug, contest.title)
-                          }
-                          className="p-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md hover:text-red-400 hover:border-red-500/50 transition-colors"
-                          title="Delete Contest"
-                        >
-                          <FaTrashAlt size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  );
-
+  /* ── RENDER ── */
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans selection:bg-red-500/30">
-      {/* Floating Back Button */}
-      <button
-        onClick={() => navigate(-1)} // or handleBack
-        className="fixed top-24 left-4 sm:left-6 z-40 flex items-center gap-2 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-300 font-medium rounded-full py-2 px-4 text-xs transition-colors hover:bg-zinc-800 hover:text-white shadow-lg"
-      >
-        <FaArrowLeft size={12} /> <span className="hidden sm:inline">Back</span>
-      </button>
-      <main className="pt-36 px-4 sm:px-6 lg:px-8 pb-20 max-w-7xl mx-auto">
-        {/* Header & CTA */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 border-b border-zinc-800/60 pb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-100 mb-2">
+    <div className="min-h-screen bg-zinc-950 text-zinc-300 font-sans">
+
+      {/* ══ STICKY HEADER ══════════════════════════════════════════ */}
+      <header className="sticky top-0 z-30 h-14 bg-zinc-950/95 border-b border-zinc-800 backdrop-blur-md flex items-center justify-between px-4 sm:px-6">
+
+        {/* Left: back + title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors shrink-0"
+          >
+            <FaArrowLeft size={12} />
+          </button>
+          <div className="hidden sm:block w-px h-5 bg-zinc-800 shrink-0" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-1 h-4 bg-red-600 rounded-full shrink-0" />
+            <h1 className="text-sm font-bold text-zinc-100 tracking-tight truncate">
               Contest Management
             </h1>
-            <p className="text-zinc-400 text-sm">
-              Create, edit, and orchestrate official coding arenas.
-            </p>
+          </div>
+        </div>
+
+        {/* Right: summary chips + create button */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Live indicator */}
+          {contests.live.length > 0 && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+              <FaCircle size={6} className="text-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                {contests.live.length} LIVE
+              </span>
+            </div>
+          )}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800">
+            <span className="text-[10px] font-bold text-zinc-500 font-mono">
+              {totalCount} TOTAL
+            </span>
           </div>
           <Link
             to="/admin/contests/create"
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-md py-2.5 px-5 transition-colors shadow-sm text-sm shrink-0 w-full md:w-auto justify-center"
+            className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-colors"
           >
-            <FaPlus size={12} /> Create New Contest
+            <FaPlus size={11} />
+            <span className="hidden sm:inline">Create Contest</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* ══ MAIN CONTENT ════════════════════════════════════════════ */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-20 space-y-8">
+
+        {/* Page intro (below header) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+          <div>
+            <h2 className="text-xl font-bold text-zinc-100">Arenas</h2>
+            <p className="text-sm text-zinc-500 mt-0.5">
+              Create, edit, and orchestrate official coding arenas.
+            </p>
+          </div>
+          {/* Mobile create button */}
+          <Link
+            to="/admin/contests/create"
+            className="sm:hidden flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            <FaPlus size={11} /> Create Contest
           </Link>
         </div>
 
-        {/* Data Tables */}
-        {renderContestTable(
-          "Live Arenas",
-          <FaPlay className="text-emerald-500 animate-pulse" />,
-          contests.live,
-          true,
-        )}
-        {renderContestTable(
-          "Upcoming Battles",
-          <FaCalendarAlt />,
-          contests.upcoming,
-          false,
-        )}
-        {renderContestTable(
-          "Past Archives",
-          <FaHistory />,
-          contests.past,
-          true,
-        )}
+        {/* ── Contest sections ── */}
+        {SECTIONS.map(({ key, label, rankable, emptyText, badge, icon }) => {
+          const data = contests[key] || [];
+          return (
+            <section key={key}>
+
+              {/* Section header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  {icon}
+                  <h3 className="text-base font-bold text-zinc-200">{label}</h3>
+                  {badge}
+                  <span className="font-mono text-xs text-zinc-600">({data.length})</span>
+                </div>
+              </div>
+
+              {/* Table card */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                {data.length === 0 ? (
+                  <div className="px-6 py-10 text-center">
+                    <p className="text-sm text-zinc-600 font-medium">{emptyText}</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left whitespace-nowrap min-w-[620px]">
+                      <thead>
+                        <tr className="border-b border-zinc-800 bg-zinc-950/60">
+                          <th className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-zinc-600">Title</th>
+                          <th className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-zinc-600">Start</th>
+                          <th className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-zinc-600">End</th>
+                          <th className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-zinc-600 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/40">
+                        {data.map((contest) => (
+                          <tr
+                            key={contest._id}
+                            className="hover:bg-zinc-800/30 transition-colors group"
+                          >
+                            {/* Title */}
+                            <td className="px-5 py-3.5">
+                              <Link
+                                to={`/admin/contests/edit/${contest.slug}`}
+                                className="text-sm font-semibold text-zinc-200 hover:text-red-400 transition-colors"
+                              >
+                                {contest.title}
+                              </Link>
+                              <p className="text-[10px] text-zinc-600 font-mono mt-0.5">{contest.slug}</p>
+                            </td>
+
+                            {/* Start */}
+                            <td className="px-5 py-3.5">
+                              <span className="text-sm text-zinc-400">{fmtDate(contest.startTime)}</span>
+                            </td>
+
+                            {/* End */}
+                            <td className="px-5 py-3.5">
+                              <span className="text-sm text-zinc-400">{fmtDate(contest.endTime)}</span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center justify-end gap-1.5">
+
+                                {rankable && (
+                                  <button
+                                    onClick={() => handleCalculate(contest.slug, contest.title)}
+                                    disabled={calculatingSlug === contest.slug}
+                                    title="Calculate Rankings"
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    {calculatingSlug === contest.slug
+                                      ? <FaSyncAlt size={12} className="animate-spin text-amber-400" />
+                                      : <FaTrophy size={12} />
+                                    }
+                                  </button>
+                                )}
+
+                                <Link
+                                  to={`/admin/contests/edit/${contest.slug}`}
+                                  title="Edit Contest"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-blue-400 hover:border-blue-500/40 transition-colors"
+                                >
+                                  <FaEdit size={12} />
+                                </Link>
+
+                                <button
+                                  onClick={() => handleDelete(contest.slug, contest.title)}
+                                  title="Delete Contest"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
+                                >
+                                  <FaTrashAlt size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        })}
       </main>
     </div>
   );

@@ -319,6 +319,9 @@ export default function ProfilePage() {
                       <button onClick={() => navigate("/admin/contests")} className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-md py-2.5 px-4 text-xs transition-colors hover:bg-zinc-700 hover:text-white">
                         Manage Arenas
                       </button>
+                      <button onClick={() => navigate("/admin/roadmap")} className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-md py-2.5 px-4 text-xs transition-colors hover:bg-zinc-700 hover:text-white">
+                        Manage Roadmaps
+                      </button>
                     </>
                   )}
 

@@ -12,7 +12,7 @@ import ScrollToTop from './component/ScrollToTop';
 import Nav from './component/Nav';
 import MasterRoute from './component/adminComponents/MasterRoute';
 import AdminRoute from './component/adminComponents/AdminRoute';
-import PricingSection from './component/PricingSection';
+import PricingSection from './component/HomepageComponent/PricingSection';
 
 // Pages
 import Home from './pages/Home';

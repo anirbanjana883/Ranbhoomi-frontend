@@ -1,147 +1,94 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaCheck, FaTimes, FaRobot, FaTrophy, FaUserNinja, FaCrown } from 'react-icons/fa';
-import axios from 'axios';
-import { serverUrl } from '../App'; 
-import { toast } from 'react-toastify';
-import { useSelector, useDispatch } from 'react-redux';
-// import { setUserData } from '../redux/userSlice'; // Optional: if you want to update Redux immediately
+import { useSelector } from 'react-redux';
 
-const PricingCard = ({ title, price, features, icon, isRecommended, onBuy, userPlan }) => {
+const PricingCard = ({ title, price, features, icon, isRecommended, onClick, userPlan }) => {
   const isCurrent = userPlan === title;
   
   return (
-    <div className={`relative p-8 rounded-2xl border flex flex-col items-center transition-all duration-300 hover:scale-105 ${
+    <div className={`relative p-8 rounded-3xl border flex flex-col items-center transition-all duration-300 hover:-translate-y-2 ${
         isRecommended 
-        ? 'border-orange-500 bg-gradient-to-b from-orange-900/20 to-black shadow-[0_0_30px_rgba(255,69,0,0.2)]' 
-        : 'border-gray-800 bg-black/40'
+        ? 'border-red-600/50 bg-gradient-to-b from-red-900/20 to-zinc-950 shadow-[0_0_40px_rgba(220,38,38,0.15)]' 
+        : 'border-zinc-800 bg-zinc-900/40'
     }`}>
       {isRecommended && (
-        <div className="absolute -top-4 bg-orange-600 text-white font-bold px-4 py-1 rounded-full text-xs uppercase tracking-wider shadow-lg">
+        <div className="absolute -top-4 bg-red-600 text-white font-bold px-4 py-1.5 rounded-full text-[10px] uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(220,38,38,0.5)]">
           Most Popular
         </div>
       )}
       
-      <div className={`text-5xl mb-6 ${isRecommended ? 'text-orange-500' : 'text-gray-600'}`}>
+      <div className={`text-5xl mb-6 ${isRecommended ? 'text-red-500' : 'text-zinc-600'}`}>
         {icon}
       </div>
 
-      <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">{title}</h3>
-      <div className="mb-6 flex items-baseline">
-        <span className="text-4xl font-black text-white">₹{price}</span>
-        <span className="text-gray-500 ml-1">/mo</span>
+      <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-wide ff-syne">{title}</h3>
+      <div className="mb-6 flex items-baseline ff-syne">
+        {price === 0 ? (
+          <span className="text-4xl font-black text-white">Free</span>
+        ) : (
+          <>
+            <span className="text-2xl text-zinc-400 mr-1">₹</span>
+            <span className="text-5xl font-black text-white">{price}</span>
+            <span className="text-zinc-500 ml-1 ff-mono text-sm">/mo</span>
+          </>
+        )}
       </div>
 
-      <ul className="space-y-4 mb-8 w-full">
+      <ul className="space-y-4 mb-8 w-full ff-inter">
         {features.map((f, i) => (
-          <li key={i} className="flex items-center gap-3 text-sm">
+          <li key={i} className="flex items-start gap-3 text-sm">
             {f.included ? (
-              <div className="p-1 rounded-full bg-green-500/20 text-green-500"><FaCheck size={10}/></div>
+              <div className="p-1 rounded-full bg-emerald-500/10 text-emerald-500 mt-0.5"><FaCheck size={10}/></div>
             ) : (
-              <div className="p-1 rounded-full bg-gray-800 text-gray-600"><FaTimes size={10}/></div>
+              <div className="p-1 rounded-full bg-zinc-800 text-zinc-600 mt-0.5"><FaTimes size={10}/></div>
             )}
-            <span className={!f.included ? 'text-gray-600' : 'text-gray-300'}>{f.text}</span>
+            <span className={!f.included ? 'text-zinc-600' : 'text-zinc-300'}>{f.text}</span>
           </li>
         ))}
       </ul>
 
       <button 
-        onClick={() => onBuy(title)}
-        disabled={isCurrent || price === 0}
-        className={`w-full py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
+        onClick={onClick}
+        className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-all ff-mono text-sm mt-auto ${
             isCurrent 
-            ? 'bg-gray-800 text-gray-500 cursor-default border border-gray-700'
+            ? 'bg-zinc-800 text-zinc-500 cursor-default border border-zinc-700'
             : isRecommended 
-                ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-[0_0_20px_rgba(234,88,12,0.4)]' 
-                : 'bg-white text-black hover:bg-gray-200'
+                ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)]' 
+                : 'bg-zinc-100 text-zinc-900 hover:bg-white'
         }`}
       >
-        {isCurrent ? "Active Plan" : price === 0 ? "Get Started" : "Upgrade Now"}
+        {isCurrent ? "Current Plan" : "View Full Details"}
       </button>
     </div>
   );
 };
 
-const PricingPage = () => {
+export default function PricingPreviewSection() {
   const { userData } = useSelector(state => state.user);
-  const dispatch = useDispatch();
-
-  const handlePayment = async (planType) => {
-    if (!userData) return toast.error("Please login to upgrade!");
-
-    try {
-        // 1. Create Order
-        const { data: order } = await axios.post(
-            `${serverUrl}/api/payment/create-order`, 
-            { planType }, 
-            { withCredentials: true }
-        );
-
-        // 2. Open Razorpay Interface
-        const options = {
-            key: order.keyId,
-            amount: order.amount,
-            currency: order.currency,
-            name: `Ranbhoomi ${planType}`,
-            description: `Unlock ${planType} Powers`,
-            order_id: order.orderId,
-            handler: async (response) => {
-                // 3. Verify on Backend
-                try {
-                    const verify = await axios.post(
-                        `${serverUrl}/api/payment/verify-payment`, 
-                        {
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature,
-                            planType: planType
-                        }, 
-                        { withCredentials: true }
-                    );
-                    
-                    if (verify.data.success) {
-                        toast.success(`Welcome to the ${planType} tier!`);
-                        // Force reload to update User State (simplest way)
-                        window.location.reload(); 
-                    }
-                } catch (err) {
-                    toast.error("Payment Verification Failed");
-                    console.error(err);
-                }
-            },
-            theme: { color: "#ea580c" }
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response){
-            toast.error(response.error.description);
-        });
-        rzp.open();
-
-    } catch (err) {
-        console.error(err);
-        toast.error("Could not initiate payment");
-    }
-  };
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-20 px-4 flex flex-col items-center">
+    <div className="bg-zinc-950 text-white py-24 px-4 flex flex-col items-center border-t border-zinc-900">
       <div className="text-center mb-16 max-w-2xl">
-        <h1 className="text-5xl font-black text-white mb-4 tracking-tight">
-          CHOOSE YOUR <span className="text-orange-600">WEAPON</span>
-        </h1>
-        <p className="text-gray-400 text-lg">
+        <div className="ff-mono text-[10px] uppercase tracking-[0.35em] text-red-500 mb-4 font-bold">
+          Level Up
+        </div>
+        <h2 className="text-4xl sm:text-5xl font-black text-white mb-6 tracking-tight ff-syne">
+          CHOOSE YOUR <span className="text-red-600 shimmer-text">WEAPON</span>
+        </h2>
+        <p className="text-zinc-400 text-base sm:text-lg ff-inter">
           Whether you are a scout or a gladiator, we have the right tools to prepare you for the battleground of coding interviews.
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8 max-w-7xl w-full px-4">
-        {/* SCOUT (Free) */}
+      <div className="grid lg:grid-cols-3 gap-8 max-w-6xl w-full px-4">
         <PricingCard 
-          title="Free" 
+          title="Scout" 
           price={0} 
           icon={<FaUserNinja />}
-          userPlan={userData?.subscriptionPlan}
-          onBuy={() => {}}
+          userPlan={userData?.subscriptionPlan || 'Scout'}
+          onClick={() => navigate('/premium')}
           features={[
             { text: "3 AI Hints / Day", included: true },
             { text: "Participate in Public Contests", included: true },
@@ -150,15 +97,13 @@ const PricingPage = () => {
             { text: "Mock Interviews", included: false },
           ]}
         />
-
-        {/* WARRIOR */}
         <PricingCard 
           title="Warrior" 
           price={499} 
           icon={<FaRobot />}
           isRecommended={true}
-          userPlan={userData?.subscriptionPlan}
-          onBuy={handlePayment}
+          userPlan={userData?.subscriptionPlan || 'Scout'}
+          onClick={() => navigate('/premium')}
           features={[
             { text: "Unlimited AI Assistant", included: true },
             { text: "Company Tags (Amazon/Google)", included: true },
@@ -167,14 +112,12 @@ const PricingPage = () => {
             { text: "Host Private Contests", included: false },
           ]}
         />
-
-        {/* GLADIATOR */}
         <PricingCard 
           title="Gladiator" 
           price={999} 
           icon={<FaCrown />}
-          userPlan={userData?.subscriptionPlan}
-          onBuy={handlePayment}
+          userPlan={userData?.subscriptionPlan || 'Scout'}
+          onClick={() => navigate('/premium')}
           features={[
             { text: "Everything in Warrior", included: true },
             { text: "Host Private Contests", included: true },
@@ -186,6 +129,4 @@ const PricingPage = () => {
       </div>
     </div>
   );
-};
-
-export default PricingPage;
+}

@@ -108,8 +108,8 @@ const RoadmapCard = ({ roadmap, type }) => {
 // ─── Static Templates (Placeholders) ───────────────────────────────
 const ALL_TEMPLATES = [
   {
-    roadmapId: 'blind-75',
-    title: "Blind 75 FAANG List",
+    roadmapId: 'ranbhoomi-75',
+    title: "RANBHOOMI 75 FAANG List",
     description: "The most frequently asked interview questions. High ROI for standard FAANG loops.",
     category: "Essential",
     icon: <FaTerminal size={14} />

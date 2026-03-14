@@ -35,7 +35,7 @@ function LiveRatingChart() {
     <div className="w-full flex flex-col h-full justify-between">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <div className="ff-mono text-[10px] text-zinc-300 uppercase tracking-widest mb-1 font-semibold">ELO Rating</div>
+          <div className="ff-mono text-[10px] text-zinc-300 uppercase tracking-widest mb-1 font-semibold">CONTEST Rating</div>
           <div className="ff-syne text-2xl lg:text-3xl font-black text-white">{last.toLocaleString()}</div>
         </div>
         <div className={`flex items-center gap-1 ff-mono text-[10px] font-bold px-2 py-1 rounded-lg ${
@@ -231,7 +231,7 @@ export default function HeroSection() {
             </div>
 
             <p className="fu d3 ff-inter text-base sm:text-lg text-zinc-300 leading-relaxed max-w-[440px] font-medium">
-              Compete, solve DSA problems live, and climb the global ELO leaderboard — or get left behind.
+              Compete, solve DSA problems live, and climb the global CONTEST leaderboard — or get left behind.
             </p>
 
             {/* CTAs */}
@@ -259,7 +259,7 @@ export default function HeroSection() {
 
             {/* Rating chart card */}
             <div className="fu d3 relative card-top card-glow bg-zinc-900/90 backdrop-blur-md border border-zinc-700/80 rounded-2xl p-6 shadow-2xl w-full">
-              <div className="absolute top-4 right-5 flex items-center gap-2 bg-zinc-800/80 px-2 py-1 rounded-md border border-zinc-700">
+              <div className="absolute top-4 right-70 flex items-center gap-2 bg-zinc-800/80 px-2 py-1 rounded-md border border-zinc-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
                 <span className="ff-mono text-[9px] sm:text-[10px] text-zinc-300 font-bold uppercase tracking-widest">Live</span>
               </div>
